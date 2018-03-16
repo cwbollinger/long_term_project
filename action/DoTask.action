@@ -1,0 +1,9 @@
+#goal
+string taskName
+string repo_url
+----
+#result
+bool success
+----
+#feedback
+string status
