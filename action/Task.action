@@ -1,0 +1,10 @@
+#goal
+string workspace_name
+string package_name
+string launchfile_name
+----
+#result
+string success_msg
+----
+#feedback
+string status
