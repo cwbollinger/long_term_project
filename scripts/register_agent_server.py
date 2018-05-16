@@ -3,6 +3,7 @@
 import collections
 
 import rospy
+import actionlib
 
 from long_term_server.srv import *
 from long_term_server.msg import *
@@ -17,12 +18,13 @@ class LongTermAgentServer(object):
         self.s1 = rospy.Service('register_agent', RegisterAgent, self.handle_register_agent)
         self.s2 = rospy.Service('unregister_agent', UnregisterAgent, self.handle_unregister_agent)
         self.s3 = rospy.Service('get_agents', GetRegisteredAgents, self.handle_get_agents)
+        self.s4 = rospy.Service('run_task', RunTask, self.send_task)
 
     def handle_register_agent(self, req):
         if req.description not in self.agents:
             print 'registering agent: {}'.format(req.description.agent_name)
-            c = Client(req.description.agent_name, req.description.agent_type, None)
-            c.action_client = actionlib.SimpleActionClient
+            action_client = actionlib.SimpleActionClient('{}_agent'.format(req.description.agent_name), TaskAction)
+            c = Client(req.description.agent_name, req.description.agent_type, action_client)
             self.agents.append(c)
             return RegisterAgentResponse(True, req.description.agent_name)
         return RegisterAgentResponse(False, "")
@@ -37,17 +39,19 @@ class LongTermAgentServer(object):
     def handle_get_agents(self, req):
         return GetRegisteredAgentsResponse(self.agents)
 
-    def send_task(self, agent_name, workspace_name, package_name, launchfile_name):
+    def send_task(self, req):
+        #agent_name, workspace_name, package_name, launchfile_name):
         names = [a.name for a in self.agents]
-        idx = names.index(agent_name)
         goal = TaskGoal()
-        print(goal)
-        return
-        '''
-        self.agents[idx].action_client.send_goal
+        goal.workspace_name = req.workspace_name
+        goal.package_name = req.package_name
+        goal.launchfile_name = req.launchfile_name
+        idx = names.index(req.agent_name)
+        agent = self.agents[idx]
+        agent.action_client.send_goal(goal)
+        agent.action_client.wait_for_result()
+        return True
 
-        pass
-        '''
 
 
 if __name__ == "__main__":

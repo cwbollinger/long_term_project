@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 
 import sys
+import os
+import subprocess
+
 import rospy
 import actionlib
-import subprocess
 from long_term_server.msg import *
 from long_term_server.srv import *
 from std_srvs.srv import Empty
@@ -61,7 +63,7 @@ class TaskActionServer(object):
         success = True
         print goal
 
-        p = subprocess.Popen(['~/{}/devel/env.sh'.format(goal.workspace_name), 'roslaunch', goal.package_name, goal.launchfile_name])
+        p = subprocess.Popen([os.path.expanduser('~/{}/devel/env.sh').format(goal.workspace_name), 'roslaunch', goal.package_name, goal.launchfile_name])
 
         self._feedback.status = "This is a test msg."
         self._as.publish_feedback(self._feedback)

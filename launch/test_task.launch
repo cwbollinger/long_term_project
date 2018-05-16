@@ -1,0 +1,7 @@
+<launch>
+    <node pkg="usb_cam" type="usb_cam_node" name="camera">
+        <param name="video_device" value="/dev/video0"/>
+    </node>
+
+    <node pkg="long_term_deployment" type="test" name="test_node" required="true"/>
+</launch>
