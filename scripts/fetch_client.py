@@ -85,7 +85,7 @@ class TaskActionServer(object):
         
 if __name__ == "__main__":
     server_client = LongTermAgentClient()
-    agent_name = server_client.register_agent('fetch', 'fetch')
+    agent_name = server_client.register_agent(sys.argv[1], sys.argv[1])
     namespace = '{}_agent'.format(agent_name)
     rospy.init_node('{}'.format(namespace))
     task_interface = TaskActionServer(namespace)

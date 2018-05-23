@@ -2,9 +2,6 @@
 
 import collections
 
-from flask import Flask
-app = Flask(__name__)
-
 import rospy
 import actionlib
 
@@ -55,14 +52,8 @@ class LongTermAgentServer(object):
         print(agent.action_client.get_result())
         return True
 
-@app.route("/")
-def hello():
-        return "Hello World!"
 
 if __name__ == "__main__":
-    server = LongTermAgentServer()
+    task_server = LongTermAgentServer()
     print "Ready to register agents..."
-    app.run(host= '0.0.0.0')
-    print('get here')
     rospy.spin()
-    
