@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 import rospy
 
 if __name__ == "__main__": # just waits for 5 seconds and then exits

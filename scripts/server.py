@@ -2,11 +2,14 @@
 
 import collections
 
+from flask import Flask
+app = Flask(__name__)
+
 import rospy
 import actionlib
 
-from long_term_server.srv import *
 from long_term_server.msg import *
+from long_term_server.srv import *
 
 Client = collections.namedtuple('Client', ['name', 'robot_type', 'action_client'], )
 
@@ -40,7 +43,6 @@ class LongTermAgentServer(object):
         return GetRegisteredAgentsResponse(self.agents)
 
     def send_task(self, req):
-        #agent_name, workspace_name, package_name, launchfile_name):
         names = [a.name for a in self.agents]
         goal = TaskGoal()
         goal.workspace_name = req.workspace_name
@@ -50,11 +52,17 @@ class LongTermAgentServer(object):
         agent = self.agents[idx]
         agent.action_client.send_goal(goal)
         agent.action_client.wait_for_result()
+        print(agent.action_client.get_result())
         return True
 
-
+@app.route("/")
+def hello():
+        return "Hello World!"
 
 if __name__ == "__main__":
     server = LongTermAgentServer()
     print "Ready to register agents..."
+    app.run(host= '0.0.0.0')
+    print('get here')
     rospy.spin()
+    
