@@ -28,5 +28,5 @@
     </rosparam>
   </node>
   -->
-  <node pkg="long_term_deployment" name="robot_client" type="fetch_client.py"/>
+  <node pkg="long_term_deployment" name="robot_client" type="fetch_client.py" output="screen"/>
 </launch>

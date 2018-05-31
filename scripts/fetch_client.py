@@ -13,12 +13,14 @@ from std_srvs.srv import Empty
 
 class LongTermAgentClient(object):
     def __init__(self):
-        rospy.wait_for_service('register_agent')
-        self.register_agent_proxy = rospy.ServiceProxy('register_agent', RegisterAgent)
-        rospy.wait_for_service('unregister_agent')
-        self.unregister_agent_proxy = rospy.ServiceProxy('unregister_agent', UnregisterAgent)
-        rospy.wait_for_service('get_agents')
-        self.get_agents_proxy = rospy.ServiceProxy('get_agents', GetRegisteredAgents)
+        print('Waiting for services...')
+        rospy.wait_for_service('/task_server/register_agent')
+        self.register_agent_proxy = rospy.ServiceProxy('/task_server/register_agent', RegisterAgent)
+        rospy.wait_for_service('/task_server/unregister_agent')
+        self.unregister_agent_proxy = rospy.ServiceProxy('/task_server/unregister_agent', UnregisterAgent)
+        rospy.wait_for_service('/task_server/get_agents')
+        self.get_agents_proxy = rospy.ServiceProxy('/task_server/get_agents', GetRegisteredAgents)
+        print('Services found!')
 
     def register_agent(self, a_name, a_type):
         description = AgentDescription()
@@ -85,10 +87,7 @@ class TaskActionServer(object):
         
 if __name__ == "__main__":
     server_client = LongTermAgentClient()
-    if len(sys.argv) < 2 or sys.argv[1] == '':
-        name = 'fetch'
-    else:
-        name = sys.argv[1]
+    name = 'fetch'
     agent_name = server_client.register_agent(name, name)
     namespace = '{}_agent'.format(agent_name)
     rospy.init_node('{}'.format(namespace))
