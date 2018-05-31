@@ -15,10 +15,11 @@ class LongTermAgentServer(object):
     def __init__(self):
         self.agents = []
         rospy.init_node('task_server')
-        self.s1 = rospy.Service('register_agent', RegisterAgent, self.handle_register_agent)
-        self.s2 = rospy.Service('unregister_agent', UnregisterAgent, self.handle_unregister_agent)
-        self.s3 = rospy.Service('get_agents', GetRegisteredAgents, self.handle_get_agents)
-        self.s4 = rospy.Service('run_task', RunTask, self.send_task)
+        name = rospy.get_name()
+        self.s1 = rospy.Service('{}/register_agent'.format(name), RegisterAgent, self.handle_register_agent)
+        self.s2 = rospy.Service('{}/unregister_agent'.format(name), UnregisterAgent, self.handle_unregister_agent)
+        self.s3 = rospy.Service('{}/get_agents'.format(name), GetRegisteredAgents, self.handle_get_agents)
+        self.s4 = rospy.Service('{}/run_task'.format(name), RunTask, self.send_task)
 
     def handle_register_agent(self, req):
         if req.description not in self.agents:
