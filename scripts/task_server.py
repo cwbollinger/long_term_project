@@ -5,8 +5,8 @@ import collections
 import rospy
 import actionlib
 
-from long_term_server.msg import *
-from long_term_server.srv import *
+from long_term_deployment.msg import *
+from long_term_deployment.srv import *
 
 Client = collections.namedtuple('Client', ['name', 'robot_type', 'action_client'], )
 

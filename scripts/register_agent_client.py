@@ -2,8 +2,8 @@
 
 import sys
 import rospy
-from long_term_server.msg import *
-from long_term_server.srv import *
+from long_term_deployment.msg import *
+from long_term_deployment.srv import *
 
 
 class LongTermAgentClient(object):

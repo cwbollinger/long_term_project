@@ -1,4 +1,4 @@
-long_term_server/AgentDescription description
+long_term_deployment/AgentDescription description
 ---
 bool success
 string assigned_name

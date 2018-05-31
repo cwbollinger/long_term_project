@@ -1,4 +1,5 @@
 <launch>
+  <node pkg="rosbridge_server" name="rosbridge" type="rosbridge_websocket.py"/>
   <node pkg="rosduct" name="rosduct" type="rosduct_main.py" output="screen">
     <rosparam>
     # ROSbridge websocket server info
@@ -25,4 +26,5 @@
 
     </rosparam>
   </node>
+  <node pkg="long_term_deployment" name="robot_client" type="fetch_client.py"/>
 </launch>

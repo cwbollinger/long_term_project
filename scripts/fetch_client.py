@@ -6,8 +6,8 @@ import subprocess
 
 import rospy
 import actionlib
-from long_term_server.msg import *
-from long_term_server.srv import *
+from long_term_deployment.msg import *
+from long_term_deployment.srv import *
 from std_srvs.srv import Empty
 
 
@@ -85,7 +85,11 @@ class TaskActionServer(object):
         
 if __name__ == "__main__":
     server_client = LongTermAgentClient()
-    agent_name = server_client.register_agent(sys.argv[1], sys.argv[1])
+    if len(sys.argv) < 2 or sys.argv[1] == '':
+        name = 'fetch'
+    else:
+        name = sys.argv[1]
+    agent_name = server_client.register_agent(name, name)
     namespace = '{}_agent'.format(agent_name)
     rospy.init_node('{}'.format(namespace))
     task_interface = TaskActionServer(namespace)
