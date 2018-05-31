@@ -1,5 +1,6 @@
 <launch>
   <node pkg="rosbridge_server" name="rosbridge" type="rosbridge_websocket.py"/>
+  <!--
   <node pkg="rosduct" name="rosduct" type="rosduct_main.py" output="screen">
     <rosparam>
     # ROSbridge websocket server info
@@ -13,9 +14,9 @@
                   ]
     # Services running remotely to expose locally
     remote_services: [
-                        ['/task_server/register_agent', 'long_term_server/RegisterAgent'],
-                        ['/task_server/unregister_agent', 'long_term_server/UnregisterAgent'],
-                        ['/task_server/get_agents', 'long_term_server/GetRegisteredAgents']
+                        ['/task_server/register_agent', 'long_term_deployment/RegisterAgent'],
+                        ['/task_server/unregister_agent', 'long_term_deployment/UnregisterAgent'],
+                        ['/task_server/get_agents', 'long_term_deployment/GetRegisteredAgents']
                      ]
     # Services running locally to expose remotely
     local_services: [
@@ -26,5 +27,6 @@
 
     </rosparam>
   </node>
+  -->
   <node pkg="long_term_deployment" name="robot_client" type="fetch_client.py"/>
 </launch>

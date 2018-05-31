@@ -1,8 +1,8 @@
 <launch>
-  <node pkg="rosduct" name="rosduct" type="rosduct_main.py" output="screen">
+  <node pkg="rosbridge_server" name="rosbridge" type="rosbridge_websocket.py"/>
     <rosparam>
     # ROSbridge websocket server info
-    rosbridge_ip: olorin.engr.oregonstate.edu 
+    rosbridge_ip: bandit.engr.oregonstate.edu 
     rosbridge_port: 9090
     # Topics being published remotely to expose locally
     remote_topics: [
@@ -15,9 +15,9 @@
                      ]
     # Services running locally to expose remotely
     local_services: [
-                        ['/task_server/register_agent', 'long_term_server/RegisterAgent'],
-                        ['/task_server/unregister_agent', 'long_term_server/UnregisterAgent'],
-                        ['/task_server/get_agents', 'long_term_server/GetRegisteredAgents']
+                        ['/task_server/register_agent', 'long_term_deployment/RegisterAgent'],
+                        ['/task_server/unregister_agent', 'long_term_deployment/UnregisterAgent'],
+                        ['/task_server/get_agents', 'long_term_deployment/GetRegisteredAgents']
                     ]
     # Parameters to be sync, they will be polled to stay in sync
     #parameters: []
