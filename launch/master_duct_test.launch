@@ -1,5 +1,5 @@
 <launch>
-  <node pkg="rosbridge_server" name="rosbridge" type="rosbridge_websocket.py"/>
+  <node pkg="rosduct" name="rosduct" type="rosduct_main.py" output="screen">
     <rosparam>
     # ROSbridge websocket server info
     rosbridge_ip: bandit.engr.oregonstate.edu 
