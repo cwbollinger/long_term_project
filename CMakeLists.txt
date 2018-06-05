@@ -60,7 +60,7 @@ add_service_files(
   RegisterAgent.srv
   UnregisterAgent.srv
   GetRegisteredAgents.srv
-  RunTask.srv
+  QueueTask.srv
 )
 
 ## Generate actions in the 'action' folder
