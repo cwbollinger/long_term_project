@@ -1,3 +1,3 @@
 <launch>
-    <node pkg="long_term_server" type="test.py" name="test_node" required="true"/>
+    <node pkg="long_term_deployment" type="test.py" name="test_node" required="true"/>
 </launch>

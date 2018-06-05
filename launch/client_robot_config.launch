@@ -6,9 +6,14 @@
     rosbridge_port: 9090
     # Topics being published remotely to expose locally
     remote_topics: [
+                        ['/fetch_agent/cancel', 'actionlib_msgs/GoalID'],
+                        ['/fetch_agent/goal', 'long_term_deployment/TaskActionGoal']
                    ]
     # Topics being published in the local roscore to expose remotely
     local_topics: [
+                        ['/fetch_agent/feedback', 'long_term_deployment/TaskActionFeedback'],
+                        ['/fetch_agent/result', 'long_term_deployment/TaskActionResult'],
+                        ['/fetch_agent/status', 'actionlib_msgs/GoalStatusArray']
                   ]
     # Services running remotely to expose locally
     remote_services: [

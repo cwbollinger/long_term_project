@@ -56,11 +56,13 @@ class TaskActionServer(object):
     _result = TaskResult()
 
     def __init__(self, name):
+        print('Action Server Init')
         self._action_name = name
         self._as = actionlib.SimpleActionServer(self._action_name, TaskAction, execute_cb=self.execute_cb, auto_start = False)
         self._as.start()
       
     def execute_cb(self, goal):
+        print('Incoming task...')
         # helper variables
         success = True
         print goal
@@ -86,8 +88,8 @@ class TaskActionServer(object):
             self._as.set_succeeded(self._result)
         
 if __name__ == "__main__":
-    server_client = LongTermAgentClient()
     name = 'fetch'
+    server_client = LongTermAgentClient()
     agent_name = server_client.register_agent(name, name)
     namespace = '{}_agent'.format(agent_name)
     rospy.init_node('{}'.format(namespace))
