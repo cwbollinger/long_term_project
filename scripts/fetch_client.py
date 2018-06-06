@@ -63,15 +63,14 @@ class TaskActionServer(object):
       
     def execute_cb(self, goal):
         print('Incoming task...')
-        # helper variables
         success = True
         print goal
-
-        p = subprocess.Popen([os.path.expanduser('~/{}/devel/env.sh').format(goal.workspace_name), 'roslaunch', goal.package_name, goal.launchfile_name])
 
         self._feedback.status = "This is a test msg."
         self._as.publish_feedback(self._feedback)
         
+        p = subprocess.Popen([os.path.expanduser('~/{}/devel/env.sh').format(goal.workspace_name), 'roslaunch', goal.package_name, goal.launchfile_name])
+
         # start executing the action
         while  p.poll() is None:
             # check that preempt has not been requested by the client

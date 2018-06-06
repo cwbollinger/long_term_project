@@ -9,7 +9,9 @@ from long_term_deployment.srv import *
 
 def draw_menu(stdscr):
     global agents_proxy
-    global tasks_proxy
+    global queued_tasks_proxy
+    global active_tasks_proxy
+    global queue_task_proxy
 
     curses.raw()
     curses.cbreak()
@@ -29,30 +31,43 @@ def draw_menu(stdscr):
 
     # Loop where k is the last character pressed
     r = rospy.Rate(10)
+    num = None 
     while k != ord('q') and not rospy.is_shutdown():
         tmp = stdscr.getch() # non blocking now
         if tmp != -1:
             k = tmp
+            # convert to numeric
+            num = k-48
+
 
         # Initialization
         stdscr.clear()
         height, width = stdscr.getmaxyx()
 
-        agents = agents_proxy().agents
-        tasks = tasks_proxy().tasks
+        agents = [a.agent_name for a in agents_proxy().agents]
+        queued_tasks = [t.data for t in queued_tasks_proxy().tasks]
+        active_agents = [a.data for a in active_tasks_proxy().agents]
+        active_tasks = [t.data for t in active_tasks_proxy().tasks]
+
+        if num == 0:
+            queue_task_proxy('long_term_ws','long_term_deployment','test_task.launch')
+            num = None
+        elif num == 1:
+            queue_task_proxy('long_term_ws','tmp_tasks','cardboard_capture_1.launch')
+            num = None
+        elif num == 2:
+            queue_task_proxy('long_term_ws','tmp_tasks','cardboard_capture_2.launch')
+            num = None
 
         # Declaration of strings
-        keystr = "Last key pressed: {}".format(k)[:width-1]
         statusbarstr = "Press 'q' to exit | STATUS BAR"
-        if k == 0:
-            keystr = "No key press detected..."[:width-1]
-
-        # Centering calculations
-        start_x_keystr = int((width // 2) - (len(keystr) // 2) - len(keystr) % 2)
-        start_y = int((height // 2) - 2)
 
         stdscr.addstr(2, 0, "-" * (width - 1))
-        for i in range(1, height-1):
+        stdscr.addstr(int(height//2), 0, "-" * (width - 1))
+        stdscr.addstr(int(height//2)+1, 0, 'Press "0" to queue "test_task"')
+        stdscr.addstr(int(height//2)+2, 0, 'Press "1" to queue "cardboard_capture_1"')
+        stdscr.addstr(int(height//2)+3, 0, 'Press "2" to queue "cardboard_capture_2"')
+        for i in range(1, int(height//2)):
             stdscr.addstr(i, 15, '|')
             stdscr.addstr(i, 39, '|')
             stdscr.addstr(i, 59, "|")
@@ -62,9 +77,15 @@ def draw_menu(stdscr):
         stdscr.addstr(1, 75,"Task Queue")
 
         for i, agent in enumerate(agents):
-            stdscr.addstr(i+3, 62, agent.agent_name)
-        for i, task in enumerate(tasks):
-            stdscr.addstr(i+3, 62, task.data)
+            stdscr.addstr(i+3, 2, agent)
+            if agent in active_agents:
+                idx = active_agents.index(agent)
+                stdscr.addstr(i+3, 22, active_tasks[idx])
+            else:
+                stdscr.addstr(i+3, 22, "Inactive")
+
+        for i, task in enumerate(queued_tasks):
+            stdscr.addstr(i+3, 62, task)
 
         # Rendering some text
         whstr = "Width: {}, Height: {}".format(width, height)
@@ -76,7 +97,6 @@ def draw_menu(stdscr):
         stdscr.addstr(height-1, len(statusbarstr), " " * (width - len(statusbarstr) - 1))
         stdscr.attroff(curses.color_pair(3))
 
-        stdscr.addstr(start_y + 5, start_x_keystr, keystr)
 
         # Refresh the screen
         stdscr.refresh()
@@ -90,7 +110,11 @@ if __name__ == "__main__":
     rospy.wait_for_service('/task_server/get_agents')
     agents_proxy = rospy.ServiceProxy('/task_server/get_agents', GetRegisteredAgents)
     rospy.wait_for_service('/task_server/get_queued_tasks')
-    tasks_proxy = rospy.ServiceProxy('/task_server/get_queued_tasks', QueueTaskList)
+    queued_tasks_proxy = rospy.ServiceProxy('/task_server/get_queued_tasks', QueueTaskList)
+    rospy.wait_for_service('/task_server/get_active_tasks')
+    active_tasks_proxy = rospy.ServiceProxy('/task_server/get_active_tasks', ActiveTaskList)
+    rospy.wait_for_service('/task_server/queue_task')
+    queue_task_proxy = rospy.ServiceProxy('/task_server/queue_task', QueueTask)
 
     main()
 
