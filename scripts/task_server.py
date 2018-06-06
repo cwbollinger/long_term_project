@@ -6,6 +6,7 @@ import rospy
 import actionlib
 from actionlib_msgs.msg import GoalStatus
 
+from std_msgs.msg import String
 from long_term_deployment.msg import *
 from long_term_deployment.srv import *
 
@@ -22,6 +23,7 @@ class LongTermAgentServer(object):
         self.s2 = rospy.Service('{}/unregister_agent'.format(name), UnregisterAgent, self.handle_unregister_agent)
         self.s3 = rospy.Service('{}/get_agents'.format(name), GetRegisteredAgents, self.handle_get_agents)
         self.s4 = rospy.Service('{}/queue_task'.format(name), QueueTask, self.queue_task)
+        self.s4 = rospy.Service('{}/get_queued_tasks'.format(name), QueueTaskList, self.get_queued_tasks)
 
     def main(self):
         rate = rospy.Rate(1)
@@ -57,6 +59,10 @@ class LongTermAgentServer(object):
         self.task_queue.append(goal)
         print('task queued...')
         return QueueTaskResponse(True)
+
+    def get_queued_tasks(self, req):
+        readable_tasks = [String(t.workspace_name+'/'+t.package_name+'/'+t.launchfile_name) for t in self.task_queue]
+        return QueueTaskListResponse(readable_tasks)
 
     def schedule_tasks(self):
         if len(self.task_queue) == 0:
