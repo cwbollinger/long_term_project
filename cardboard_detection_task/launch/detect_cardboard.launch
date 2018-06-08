@@ -1,0 +1,3 @@
+<launch>
+    <pkg="cardboard_detection_task" type="cardboard_query_client.py" name="cardboard_task"/>
+</launch>
