@@ -70,14 +70,16 @@ class TaskActionServer(object):
         success = True
         print goal
 
-        self._feedback.status = "This is a test msg."
+        self._feedback.status = "Ping"
         self._as.publish_feedback(self._feedback)
         workspace_name = goal.workspace_name if goal.workspace_name != '' else self.ws_name
         
         p = subprocess.Popen([os.path.expanduser('~/{}/devel/env.sh').format(workspace_name), 'roslaunch', goal.package_name, goal.launchfile_name])
 
         # start executing the action
+        r = rospy.Rate(0.1)
         while  p.poll() is None:
+            self._feedback.status = "Ping"
             # check that preempt has not been requested by the client
             if self._as.is_preempt_requested():
                 rospy.loginfo('%s: Preempted' % self._action_name)
@@ -85,6 +87,7 @@ class TaskActionServer(object):
                 p.kill()
                 success = False
                 break
+            r.sleep()
           
         if success:
             self._result.success_msg = "Hooray!"

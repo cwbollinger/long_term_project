@@ -10,7 +10,7 @@ from std_msgs.msg import String
 from long_term_deployment.msg import *
 from long_term_deployment.srv import *
 
-Client = namedlist('Client', ['name', 'robot_type', 'action_client', 'active_task'])
+Client = namedlist('Client', ['name', 'robot_type', 'action_client', 'active_task', 'last_ping_time'])
 
 
 class LongTermAgentServer(object):
@@ -40,12 +40,13 @@ class LongTermAgentServer(object):
         while not rospy.is_shutdown():
             self.schedule_tasks()
             self.check_task_status()
+            self.clear_dcd_agents()
             rate.sleep()
 
     def handle_register_agent(self, req):
         if req.description not in self.agents:
             print('registering agent: {}'.format(req.description.agent_name))
-            c = Client(req.description.agent_name, req.description.agent_type, None, None)
+            c = Client(req.description.agent_name, req.description.agent_type, None, None, rospy.get_time())
             self.agents.append(c)
             return RegisterAgentResponse(True, req.description.agent_name)
         return RegisterAgentResponse(False, "")
@@ -87,7 +88,7 @@ class LongTermAgentServer(object):
         for a in self.agents:
             if a.active_task != None:
                 active_agents.append(String(a.name))
-                active_tasks.append(String(a.active_task))
+                active_tasks.append(String(a.active_task.launchfile_name))
         return ActiveTaskListResponse(active_agents, active_tasks)
 
     def schedule_tasks(self):
@@ -103,11 +104,27 @@ class LongTermAgentServer(object):
                 print('agent {} available'.format(agent.name))
                 #print('will wait until goal is complete...')
                 goal = self.task_queue.pop(0)
-                agent.active_task = goal.workspace_name+'/'+goal.package_name+'/'+goal.launchfile_name
-                agent.action_client.send_goal(goal)
+                agent.active_task = goal
+                agent.last_ping_time = rospy.get_time()
+                agent.action_client.send_goal(goal, feedback_cb=self.cb_creator(agent))
                 print('Goal Sent!')
                 #agent.action_client.wait_for_result()
                 #print('Result Complete!')
+
+    def cb_creator(self, agent):
+        def cb(fb):
+            agent.last_ping_time = rospy.get_time()
+        return cb
+
+    def clear_dcd_agents(self):
+        t = rospy.get_time()
+
+        for i, agent in enumerate(self.agents):
+            if agent.active_task != None and t - agent.last_ping_time > 15:
+                print(t - agent.last_ping_time)
+                task = agent.active_task
+                del self.agents[i]
+                self.task_queue.append(task) # recover task so it is not lost
 
     def check_task_status(self):
 
