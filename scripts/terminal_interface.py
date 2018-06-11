@@ -50,13 +50,16 @@ def draw_menu(stdscr):
         active_tasks = [t.data for t in active_tasks_proxy().tasks]
 
         if num == 0:
-            queue_task_proxy('long_term_ws','long_term_deployment','test_task.launch')
+            queue_task_proxy('','long_term_deployment','test_task.launch')
             num = None
         elif num == 1:
-            queue_task_proxy('long_term_ws','tmp_tasks','cardboard_capture_1.launch')
+            queue_task_proxy('','tmp_tasks','cardboard_capture_1.launch')
             num = None
         elif num == 2:
-            queue_task_proxy('long_term_ws','tmp_tasks','cardboard_capture_2.launch')
+            queue_task_proxy('','tmp_tasks','cardboard_capture_2.launch')
+            num = None
+        elif num == 3:
+            queue_task_proxy('','cardboard_detection_task','detect_cardboard.launch')
             num = None
 
         # Declaration of strings
@@ -67,6 +70,7 @@ def draw_menu(stdscr):
         stdscr.addstr(int(height//2)+1, 0, 'Press "0" to queue "test_task"')
         stdscr.addstr(int(height//2)+2, 0, 'Press "1" to queue "cardboard_capture_1"')
         stdscr.addstr(int(height//2)+3, 0, 'Press "2" to queue "cardboard_capture_2"')
+        stdscr.addstr(int(height//2)+4, 0, 'Press "3" to queue "detect_cardboard"')
         for i in range(1, int(height//2)):
             stdscr.addstr(i, 15, '|')
             stdscr.addstr(i, 39, '|')

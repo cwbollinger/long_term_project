@@ -60,6 +60,10 @@ class TaskActionServer(object):
         self._action_name = name
         self._as = actionlib.SimpleActionServer(self._action_name, TaskAction, execute_cb=self.execute_cb, auto_start = False)
         self._as.start()
+        current_path = os.path.abspath(__file__)
+        pkg_name = rospkg.get_package_name(current_path)
+        ws_name = current_path.split('src/{}'.format(pkg_name))[0]
+        self.ws_name = os.path.split(ws_name[:-1])[1]
       
     def execute_cb(self, goal):
         print('Incoming task...')
@@ -68,8 +72,9 @@ class TaskActionServer(object):
 
         self._feedback.status = "This is a test msg."
         self._as.publish_feedback(self._feedback)
+        workspace_name = goal.workspace_name if goal.workspace_name != '' else self.ws_name
         
-        p = subprocess.Popen([os.path.expanduser('~/{}/devel/env.sh').format(goal.workspace_name), 'roslaunch', goal.package_name, goal.launchfile_name])
+        p = subprocess.Popen([os.path.expanduser('~/{}/devel/env.sh').format(workspace_name), 'roslaunch', goal.package_name, goal.launchfile_name])
 
         # start executing the action
         while  p.poll() is None:
