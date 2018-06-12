@@ -120,7 +120,7 @@ class LongTermAgentServer(object):
         t = rospy.get_time()
 
         for i, agent in enumerate(self.agents):
-            if agent.active_task != None and t - agent.last_ping_time > 15:
+            if agent.active_task != None and t - agent.last_ping_time > 1:
                 print(t - agent.last_ping_time)
                 task = agent.active_task
                 del self.agents[i]
