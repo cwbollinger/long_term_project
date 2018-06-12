@@ -2,7 +2,7 @@
 
 import sys
 import rospy
-from cardboard_task.srv import *
+from cardboard_detection_task.srv import *
 from sensor_msgs.msg import CompressedImage
 
 
@@ -14,10 +14,10 @@ class Node:
         rospy.Subscriber(image_topic, CompressedImage, self.image_callback)
 
 
-    def image_callback(img):
+    def image_callback(self, img):
         self.img = img
 
-    def get_img():
+    def get_img(self):
         return self.img
 
 
