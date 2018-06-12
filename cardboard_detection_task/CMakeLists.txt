@@ -8,11 +8,22 @@ project(cardboard_detection_task)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  actionlib
+  actionlib_msgs
+  control_msgs
+  cv_bridge
+  geometry_msgs
+  image_geometry
+  message_generation
+  move_base_msgs
+  moveit_msgs
+  moveit_python
   roscpp
   rospy
   sensor_msgs
   std_msgs
-  message_generation
+  tf
+  visualization_msgs
 )
 
 ## System dependencies are found with CMake's conventions
