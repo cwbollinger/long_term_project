@@ -153,20 +153,28 @@ def main():
         continue
     camera_model.fromCameraInfo(node.camera_info)
 
-    # make sure robot is looking at ar tag
-    if not(node.tf.frameExists(ar_tag_frame)):
+    # look around for tag if robot can't see it
+    offset = 0.2
+    looking_points = [(1.125, 0., 0.65), (1.125, 0., 0.65 + offset), (1.125, 0. - offset, 0.65 + offset), (1.125, 0. - offset, 0.65), (1.125, 0. - offset, 0.65 - offset),
+             (1.125, 0., 0.65 - offset), (1.125, 0. + offset, 0.65 - offset), (1.125, 0. + offset, 0.65), (1.125, 0. + offset, 0.65 + offset)]
+
+    looking_point_index = 0
+    while not(node.tf.frameExists(ar_tag_frame) and (looking_point_index < len(looking_points))):
 
         ps = PointStamped()
         ps.header.frame_id = robot_torso_frame
         ps.header.stamp = rospy.Time.now()
-        ps.point.x = 1.125  # out
-        ps.point.y = 0.     # left
-        ps.point.z = 0.65   # up
+        ps.point.x = looking_points[looking_point_index][0]  # out
+        ps.point.y = looking_points[looking_point_index][1]  # left
+        ps.point.z = looking_points[looking_point_index][2]  # up
 
-        rospy.loginfo("Turning head forward")
+        rospy.loginfo("Looking for ar tag")
         node.look_at(robot_torso_frame, ps.point.x, ps.point.y, ps.point.z)
         result = node.point_head_client.wait_for_result()
         rospy.loginfo(result)
+
+        looking_point_index += 1
+
 
     if node.tf.frameExists(ar_tag_frame):
 
@@ -179,11 +187,11 @@ def main():
 
         if ar_tag_frame == "tag_1":
             ps.point.x = 0.150   # left
-            ps.point.y = -0.800   # up
+            ps.point.y = -0.850   # up
             ps.point.z = 0.150   # out
         elif ar_tag_frame == "tag_2":
             ps.point.x = -0.140  # left
-            ps.point.y = -1.150 # up
+            ps.point.y = -1.20 # up
             ps.point.z = 0.400   # out
 
 
