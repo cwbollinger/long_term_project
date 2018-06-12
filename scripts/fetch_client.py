@@ -5,6 +5,7 @@ import os
 import subprocess
 
 import rospy
+import rospkg
 import actionlib
 from long_term_deployment.msg import *
 from long_term_deployment.srv import *
@@ -77,9 +78,9 @@ class TaskActionServer(object):
         p = subprocess.Popen([os.path.expanduser('~/{}/devel/env.sh').format(workspace_name), 'roslaunch', goal.package_name, goal.launchfile_name])
 
         # start executing the action
-        r = rospy.Rate(0.1)
+        r = rospy.Rate(10)
         while  p.poll() is None:
-            self._feedback.status = "Ping"
+            self._as.publish_feedback(self._feedback)
             # check that preempt has not been requested by the client
             if self._as.is_preempt_requested():
                 rospy.loginfo('%s: Preempted' % self._action_name)
