@@ -92,11 +92,9 @@ class LongTermAgentServer(object):
         return ActiveTaskListResponse(active_agents, active_tasks)
 
     def schedule_tasks(self):
-        if len(self.task_queue) == 0:
-            #print('No tasks queued')
-            return False
-
         for i, agent in enumerate(self.agents):
+            if len(self.task_queue) == 0:
+                return
             if agent.action_client == None:
                continue # not initialized fully, move on
             status = agent.action_client.get_state()
@@ -120,11 +118,12 @@ class LongTermAgentServer(object):
         t = rospy.get_time()
 
         for i, agent in enumerate(self.agents):
-            if agent.active_task != None and t - agent.last_ping_time > 1:
-                print(t - agent.last_ping_time)
-                task = agent.active_task
-                del self.agents[i]
-                self.task_queue.append(task) # recover task so it is not lost
+            if agent.active_task != None:
+                print('{}: {:.3f}s since last ping'.format(agent.name, t-agent.last_ping_time))
+                if t - agent.last_ping_time > 5:
+                    print('{} seems disconnected, requeueing task and removing agent from pool'.format(agent.name))
+                    self.task_queue.append(agent.active_task) # recover task so it is not lost
+                    del self.agents[i]
 
     def check_task_status(self):
 

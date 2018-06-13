@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-import sys,os
+import sys
+import os
 import curses
 
 import rospy
@@ -84,7 +85,12 @@ def draw_menu(stdscr):
             stdscr.addstr(i+3, 2, agent)
             if agent in active_agents:
                 idx = active_agents.index(agent)
-                stdscr.addstr(i+3, 22, active_tasks[idx])
+                try:
+                    stdscr.addstr(i+3, 22, active_tasks[idx])
+                except:
+                    print(active_agents)
+                    print(active_tasks)
+                    sys.exit()
             else:
                 stdscr.addstr(i+3, 22, "Inactive")
 

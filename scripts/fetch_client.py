@@ -94,6 +94,7 @@ class TaskActionServer(object):
             self._result.success_msg = "Hooray!"
             rospy.loginfo('%s: Succeeded' % self._action_name)
             self._as.set_succeeded(self._result)
+
         
 if __name__ == "__main__":
     name = 'fetch'
@@ -102,4 +103,7 @@ if __name__ == "__main__":
     namespace = '{}_agent'.format(agent_name)
     rospy.init_node('{}'.format(namespace))
     task_interface = TaskActionServer(namespace)
+    def unregister_agent():
+        server_client.unregister_agent(name)
+    rospy.on_shutdown(unregister_agent)
     rospy.spin()
