@@ -73,8 +73,11 @@ def movebase_client():
             rospy.signal_shutdown("Action server not available!")
             break
         if i == 0 or i == 1: # stupid hacky thing
-        # Do Chris's CV thing here
-            p = subprocess.Popen([os.path.expanduser('~/long_term_ws/devel/env.sh'), 'roslaunch', 'tmp_tasks', 'cardboard_capture_{}.launch'.format(i+1)])
+            # Do Chris's CV thing here
+            p = subprocess.Popen([os.path.expanduser('~/long_term_ws/devel/env.sh'), 'roslaunch', 'cardboard_detection_task', 'cardboard_capture_{}.launch'.format(i+1)])
+            while p.poll() is None: # wait until launchfile exits
+                pass
+            p = subprocess.Popen([os.path.expanduser('~/long_term_ws/devel/env.sh'), 'roslaunch', 'cardboard_detection_task', 'detect_cardboard.launch'])
             while p.poll() is None: # wait until launchfile exits
                 pass
         elif i == 2:

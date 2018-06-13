@@ -1,17 +1,24 @@
 #!/usr/bin/env python
 
-from cardboard_task.srv import *
+import sys
+import os
+import argparse
+import shutil
+import time
+
+import numpy as np
+
+from cardboard_detection_task.srv import *
 import rospy
 from sensor_msgs.msg import CompressedImage
+
+import cv2
+from cv_bridge import CvBridge, CvBridgeError
 
 import torch
 import pretrainedmodels
 import pretrainedmodels.utils as utils
 
-import argparse
-import os
-import shutil
-import time
 
 import torch.nn as nn
 import torch.nn.parallel
@@ -21,13 +28,9 @@ import torch.utils.data
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 
-import sys
-import numpy as np
 
 from PIL import Image
 import io
-
-
 
 
 # def image_loader(image_name, loader):
@@ -36,46 +39,51 @@ import io
 #     image = loader(image).float()
 #     image = torch.autograd.Variable(image, requires_grad=False)
 #     # image = image.unsqueeze(0)  #this is for VGG, may not be needed for ResNet
-#     return image.cuda()  #assumes that you're using GPU  
-
-
-def convert(loader, req):
-
-    img =  Image.open(io.BytesIO(bytearray(req.img.data)))
-    image = loader(image).float()
-    image = torch.autograd.Variable(image, requires_grad=False)
-    # image = image.unsqueeze(0)  #this is for VGG, may not be needed for ResNet
-    return image.cuda()  #assumes that you're using GPU  
-
+#     return image.cuda()  #assumes that you're using GPU
 
 
 class Node:
 
     def __init__(self, model, loader):
+        self.bridge = CvBridge()
         self.model = model
         self.loader = loader
 
-    def handle_cardboard_query(req):
+    def handle_cardboard_query(self, req):
         # print "Returning [%s + %s = %s]"%(req.a, req.b, (req.a + req.b))
 
-        img = convert(self.loader, req)
+        img = self.convert(req)
         # img = image_loader(img_file, self.loader)
         img = img.unsqueeze(0)
+        rospy.logwarn(type(img))
+        rospy.logwarn(img.shape)
 
         output, bn_features, features_no_bn = self.model(img)
 
+        rospy.logwarn("Made it to here!")
+
         response = list(output.data.cpu().numpy()[0])
 
+        rospy.logwarn(response)
 
         return CardboardQueryResponse(response[0], response[1])
 
+    def convert(self, req):
+        rospy.logwarn(req.img)
+        cv_img = self.bridge.compressed_imgmsg_to_cv2(req.img)
+        cv_img = cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB)
+        img = Image.fromarray(cv_img)
+        image = self.loader(img).float()
+        image = torch.autograd.Variable(image, requires_grad=False)
+        # image = image.unsqueeze(0)  #this is for VGG, may not be needed for ResNet
+        return image.cuda()  #assumes that you're using GPU
 
 
 def cardboard_query_server(model_load_path):
 
     evaluate = True
     do_train = False
-    # model_load_path = "/home/scatha/research_ws/src/lifelong_object_learning/src/pretrained-models/weights/cardboard_best_ckpt.pth"
+    model_load_path = "/home/olorin/weights/cardboard_best_ckpt.pth"
     freeze_weights = True
     batch_size = 1
     workers = 4
@@ -108,5 +116,5 @@ def cardboard_query_server(model_load_path):
 
 
 if __name__ == "__main__":
-    model_load_path = rospy.get_param("model_load_path")
-    cardboard_query_server(model_load_path)
+    #model_load_path = rospy.get_param("model_load_path")
+    cardboard_query_server(None) #hard coded model path for now

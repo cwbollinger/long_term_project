@@ -1,5 +1,5 @@
 import math
-from urllib.request import urlretrieve
+from urllib2 import urlopen
 
 import torch
 from PIL import Image
@@ -77,9 +77,9 @@ def download_url(url, destination=None, progress_bar=True):
 
     if progress_bar:
         with tqdm(unit='B', unit_scale=True, miniters=1, desc=url.split('/')[-1]) as t:
-            filename, _ = urlretrieve(url, filename=destination, reporthook=my_hook(t))
+            filename, _ = urlopen(url, filename=destination, reporthook=my_hook(t))
     else:
-        filename, _ = urlretrieve(url, filename=destination)
+        filename, _ = urlopen(url, filename=destination)
 
 
 class AveragePrecisionMeter(object):

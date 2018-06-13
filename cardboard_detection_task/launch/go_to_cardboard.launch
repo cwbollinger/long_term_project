@@ -1,0 +1,3 @@
+<launch>
+    <pkg="cardboard_detection_task" type="go_to_cardboard.py" name="cardboard_task" output="screen"/>
+</launch>

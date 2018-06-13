@@ -2,7 +2,7 @@ import csv
 import os
 import os.path
 import tarfile
-from urllib.parse import urlparse
+from urlparse import urlparse
 
 import numpy as np
 import torch
@@ -258,3 +258,4 @@ class Voc2007Classification(data.Dataset):
 
     def get_number_classes(self):
         return len(self.classes)
+
