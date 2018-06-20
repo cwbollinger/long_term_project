@@ -8,6 +8,9 @@ from actionlib_msgs.msg import GoalStatus
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from fetch_auto_dock_msgs.msg import DockAction, DockGoal, UndockAction, UndockGoal
 
+import smach
+import smach_ros
+
 tag_1_goal = MoveBaseGoal()
 tag_1_goal.target_pose.header.frame_id = "map"
 tag_1_goal.target_pose.pose.position.x = -14.0599
@@ -43,6 +46,51 @@ def print_status(status):
         print("REJECTED")
     elif status == g_status.SUCCEEDED:
         print("SUCCEEDED")
+
+
+@smach.cb_interface(input_keys=['counter'], output_keys=['counter'], outcomes=['succeeded'])
+def cardboard_imaging_cb(ud):
+    p = subprocess.Popen([os.path.expanduser('~/long_term_ws/devel/env.sh'), 'roslaunch', 'cardboard_detection_task', 'cardboard_capture_{}.launch'.format(ud.counter+1)])
+    while p.poll() is None: # wait until launchfile exits
+        pass
+    ud.counter += 1
+    p = subprocess.Popen([os.path.expanduser('~/long_term_ws/devel/env.sh'), 'roslaunch', 'cardboard_detection_task', 'detect_cardboard.launch'])
+    while p.poll() is None: # wait until launchfile exits
+        pass
+    return 'succeeded'
+
+def get_smach_sm():
+    sm = smach.StateMachine(outcomes=['succeeded', 'aborted', 'preempted'])
+    sm.userdata.counter = 0
+
+    with sm:
+        smach.StateMachine.add('UNDOCK',
+                               smach_ros.SimpleActionState('undock', UndockAction, goal=UndockGoal(rotate_in_place=True)),
+                               {'succeeded':'GO_TO_CARDBOARD_1'})
+
+        smach.StateMachine.add('GO_TO_CARDBOARD_1',
+                               smach_ros.SimpleActionState('move_base', MoveBaseAction, goal=tag_1_goal),
+                               {'succeeded':'TAKE_IMAGE_1'})
+
+        smach.StateMachine.add('TAKE_IMAGE_1',
+                               smach.CBState(cardboard_imaging_cb),
+                               {'succeeded':'GO_TO_CARDBOARD_2'})
+
+        smach.StateMachine.add('GO_TO_CARDBOARD_2',
+                               smach_ros.SimpleActionState('move_base', MoveBaseAction, goal=tag_2_goal),
+                               {'succeeded':'TAKE_IMAGE_2'})
+
+        smach.StateMachine.add('TAKE_IMAGE_2',
+                               smach.CBState(cardboard_imaging_cb),
+                               {'succeeded':'GO_TO_DOCK'})
+
+        smach.StateMachine.add('GO_TO_DOCK',
+                               smach_ros.SimpleActionState('move_base', MoveBaseAction, goal=dock_goal),
+                               {'succeeded':'DOCK'})
+
+        smach.StateMachine.add('DOCK',
+                               smach_ros.SimpleActionState('dock', DockAction),
+                               {'succeeded':'succeeded'})
 
 def movebase_client():
     dock_client = actionlib.SimpleActionClient('dock', DockAction)
@@ -89,9 +137,13 @@ def movebase_client():
 if __name__ == '__main__':
     try:
         rospy.init_node('movebase_client_py')
+        sm = get_smach_sm()
+        sm.execute()
+        '''
         result = movebase_client()
         if result:
             rospy.loginfo("Goal execution done!")
+        '''
     except rospy.ROSInterruptException:
-        rospy.loginfo("Navigation test finished.")
+        rospy.logwarn("Interrupt!")
 
