@@ -23,18 +23,18 @@ class LongTermAgentClient(object):
             resp1 = self.register_agent_proxy(description)
             if resp1.success:
                 self.task_service = rospy.Service('start_task_{}'.format(a_name), StartTask, self.start_task)
-            return resp1.success 
+            return resp1.success
         except rospy.ServiceException, e:
             print "Service call failed: %s"%e
-            return False 
+            return False
 
     def unregister_agent(self, a_name):
         try:
             resp1 = self.unregister_agent_proxy(a_name)
-            return resp1.success 
+            return resp1.success
         except rospy.ServiceException, e:
             print "Service call failed: %s"%e
-            return False 
+            return False
 
     def get_agents(self):
         try:
@@ -42,7 +42,7 @@ class LongTermAgentClient(object):
             return resp1.agents
         except rospy.ServiceException, e:
             print "Service call failed: %s"%e
-            return [] 
+            return []
 
 
 if __name__ == "__main__":

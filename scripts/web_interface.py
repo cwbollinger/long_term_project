@@ -7,7 +7,6 @@ def hello():
         return "Hello World!"
 
 
-
 def shutdown_server():
     func = request.environ.get('werkzeug.server.shutdown')
     if func is None:

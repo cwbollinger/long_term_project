@@ -1,7 +1,7 @@
 <launch>
   <node pkg="rosbridge_server" name="rosbridge" type="rosbridge_websocket.py">
-    <arg name="unregister_timeout" value = "10.0"/>
+    <param name="unregister_timeout" value = "10.0"/>
   </node>
-  <node pkg="long_term_deployment" type="task_server.py" name="task_server" output="screen"/>
+  <node pkg="long_term_deployment" type="task_server.py" name="task_server"/>
   <include file="$(find cardboard_detection_task)/launch/cardboard_query_server_example.launch"/>
 </launch>

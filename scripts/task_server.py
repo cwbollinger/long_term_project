@@ -53,9 +53,12 @@ class LongTermAgentServer(object):
 
     def handle_unregister_agent(self, req):
         names = [a.name for a in self.agents]
-        if a_name in names:
-            print('unregistering agent: "{}"'.format(a_name))
-            del self.agents[names.index(a_name)]
+        if req.agent_name in names:
+            print('unregistering agent: "{}"'.format(req.agent_name))
+            agent = self.agents[names.index(req.agent_name)]
+            if agent.active_task != None:
+                self.task_queue.append(agent.active_task) # recover task so it is not lost
+            del self.agents[names.index(req.agent_name)]
         return UnregisterAgentResponse(True) # always succeed for now
 
     def handle_get_agents(self, req):
@@ -79,7 +82,7 @@ class LongTermAgentServer(object):
     def get_queued_tasks(self, req):
         readable_tasks = []
         for t in self.task_queue:
-            readable_tasks.append(String(t.workspace_name+'/'+t.package_name+'/'+t.launchfile_name))
+            readable_tasks.append(String(t.package_name+'/'+t.launchfile_name))
         return QueueTaskListResponse(readable_tasks)
 
     def get_active_tasks(self, req):
@@ -120,7 +123,7 @@ class LongTermAgentServer(object):
         for i, agent in enumerate(self.agents):
             if agent.active_task != None:
                 print('{}: {:.3f}s since last ping'.format(agent.name, t-agent.last_ping_time))
-                if t - agent.last_ping_time > 5:
+                if t - agent.last_ping_time > 10:
                     print('{} seems disconnected, requeueing task and removing agent from pool'.format(agent.name))
                     self.task_queue.append(agent.active_task) # recover task so it is not lost
                     del self.agents[i]
@@ -129,7 +132,7 @@ class LongTermAgentServer(object):
 
         for agent in self.agents:
             if agent.action_client == None: # this should run once per agent
-                action_client_name = '{}_agent'.format(agent.name)
+                action_client_name = '{}_agent/active'.format(agent.name)
                 agent.action_client = actionlib.SimpleActionClient(action_client_name, TaskAction)
                 agent.action_client.wait_for_server()
 

@@ -32,7 +32,7 @@ def draw_menu(stdscr):
 
     # Loop where k is the last character pressed
     r = rospy.Rate(10)
-    num = None 
+    num = None
     while k != ord('q') and not rospy.is_shutdown():
         tmp = stdscr.getch() # non blocking now
         if tmp != -1:
@@ -54,13 +54,16 @@ def draw_menu(stdscr):
             queue_task_proxy('','long_term_deployment','test_task.launch')
             num = None
         elif num == 1:
-            queue_task_proxy('','tmp_tasks','cardboard_capture_1.launch')
+            queue_task_proxy('','cardboard_detection_task','cardboard_capture_1.launch')
             num = None
         elif num == 2:
-            queue_task_proxy('','tmp_tasks','cardboard_capture_2.launch')
+            queue_task_proxy('','cardboard_detection_task','cardboard_capture_2.launch')
             num = None
         elif num == 3:
             queue_task_proxy('','cardboard_detection_task','detect_cardboard.launch')
+            num = None
+        elif num == 4:
+            queue_task_proxy('','cardboard_detection_task','go_to_cardboard.launch')
             num = None
 
         # Declaration of strings
@@ -72,11 +75,12 @@ def draw_menu(stdscr):
         stdscr.addstr(int(height//2)+2, 0, 'Press "1" to queue "cardboard_capture_1"')
         stdscr.addstr(int(height//2)+3, 0, 'Press "2" to queue "cardboard_capture_2"')
         stdscr.addstr(int(height//2)+4, 0, 'Press "3" to queue "detect_cardboard"')
+        stdscr.addstr(int(height//2)+5, 0, 'Press "4" to queue "go_to_cardboard"')
         for i in range(1, int(height//2)):
             stdscr.addstr(i, 15, '|')
             stdscr.addstr(i, 39, '|')
             stdscr.addstr(i, 59, "|")
-       
+
         stdscr.addstr(1, 3, "Agent")
         stdscr.addstr(1, 22, "Active task")
         stdscr.addstr(1, 75,"Task Queue")
