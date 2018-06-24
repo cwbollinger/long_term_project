@@ -152,7 +152,8 @@ class TaskActionServer(object):
 
 
 if __name__ == "__main__":
-    name = 'fetch'
+    #name = 'fetch'
+    name = rospy.get_param("/agent_name", "default")
     server_client = LongTermAgentClient()
     agent_name = server_client.register_agent(name, name)
     namespace = '{}_agent'.format(agent_name)
