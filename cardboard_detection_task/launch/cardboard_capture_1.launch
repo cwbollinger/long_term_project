@@ -1,7 +1,7 @@
 <launch>
 
   <!-- capture data -->
-  <node pkg="cardboard_detection_tasks" type="capture_data_cardboard.py" name="capture_data_cardboard" output="screen">
+  <node pkg="cardboard_detection_task" type="capture_data_cardboard.py" name="capture_data_cardboard" output="screen">
     <param name="ar_tag_frame" value="tag_1" />
     <param name="image_filepath" value="/path/to/cardboard/data/" />
   </node>

@@ -13,14 +13,14 @@ import smach_ros
 
 tag_1_goal = MoveBaseGoal()
 tag_1_goal.target_pose.header.frame_id = "map"
-tag_1_goal.target_pose.pose.position.x = -14.0599
-tag_1_goal.target_pose.pose.position.y = 5.0199
+tag_1_goal.target_pose.pose.position.x = -14.6
+tag_1_goal.target_pose.pose.position.y = 3.2199
 tag_1_goal.target_pose.pose.orientation.z = -0.731
 tag_1_goal.target_pose.pose.orientation.w = 0.6825
 
 tag_2_goal = MoveBaseGoal()
 tag_2_goal.target_pose.header.frame_id = "map"
-tag_2_goal.target_pose.pose.position.x = -0.276
+tag_2_goal.target_pose.pose.position.x = -0.076
 tag_2_goal.target_pose.pose.position.y = 4.738
 tag_2_goal.target_pose.pose.orientation.z = -0.735
 tag_2_goal.target_pose.pose.orientation.w = 0.6778
@@ -66,11 +66,12 @@ def get_smach_sm():
     with sm:
         smach.StateMachine.add('UNDOCK',
                                smach_ros.SimpleActionState('undock', UndockAction, goal=UndockGoal(rotate_in_place=True)),
-                               {'succeeded':'GO_TO_CARDBOARD_1'})
+                               {'aborted':'GO_TO_CARDBOARD_1'}) # Why does this action always abort when it works every time???
 
         smach.StateMachine.add('GO_TO_CARDBOARD_1',
                                smach_ros.SimpleActionState('move_base', MoveBaseAction, goal=tag_1_goal),
-                               {'succeeded':'TAKE_IMAGE_1'})
+                               {'succeeded':'TAKE_IMAGE_1',
+                                'aborted':'GO_TO_DOCK'})
 
         smach.StateMachine.add('TAKE_IMAGE_1',
                                smach.CBState(cardboard_imaging_cb),
@@ -78,7 +79,8 @@ def get_smach_sm():
 
         smach.StateMachine.add('GO_TO_CARDBOARD_2',
                                smach_ros.SimpleActionState('move_base', MoveBaseAction, goal=tag_2_goal),
-                               {'succeeded':'TAKE_IMAGE_2'})
+                               {'succeeded':'TAKE_IMAGE_2',
+                                'aborted':'GO_TO_DOCK'})
 
         smach.StateMachine.add('TAKE_IMAGE_2',
                                smach.CBState(cardboard_imaging_cb),
@@ -91,6 +93,8 @@ def get_smach_sm():
         smach.StateMachine.add('DOCK',
                                smach_ros.SimpleActionState('dock', DockAction),
                                {'succeeded':'succeeded'})
+
+    return sm
 
 def movebase_client():
     dock_client = actionlib.SimpleActionClient('dock', DockAction)
