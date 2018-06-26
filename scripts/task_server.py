@@ -145,9 +145,9 @@ class LongTermAgentServer(object):
                     agent.active_task = None
 
                 if status == GoalStatus.SUCCEEDED:
-                    print('Woohoo')
                     result = agent.action_client.get_result()
-                    print(b64decode(result.success_msg))
+                    print('Result Returned:')
+                    print(base64.b64decode(result.success_msg))
 
 
 if __name__ == "__main__":
