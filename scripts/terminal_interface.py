@@ -51,19 +51,19 @@ def draw_menu(stdscr):
         active_tasks = [t.data for t in active_tasks_proxy().tasks]
 
         if num == 0:
-            queue_task_proxy('','long_term_deployment','test_task.launch')
+            queue_task_proxy('','long_term_deployment','test_task', ['5'])
             num = None
         elif num == 1:
-            queue_task_proxy('','cardboard_detection_task','cardboard_capture_1.launch')
+            queue_task_proxy('','cardboard_detection_task','cardboard_capture', ['1'])
             num = None
         elif num == 2:
-            queue_task_proxy('','cardboard_detection_task','cardboard_capture_2.launch')
+            queue_task_proxy('','cardboard_detection_task','cardboard_capture', ['2'])
             num = None
         elif num == 3:
-            queue_task_proxy('','cardboard_detection_task','detect_cardboard.launch')
+            queue_task_proxy('','cardboard_detection_task','cardboard_query_client', [])
             num = None
         elif num == 4:
-            queue_task_proxy('','cardboard_detection_task','go_to_cardboard.launch')
+            queue_task_proxy('','cardboard_detection_task','go_to_cardboard', [])
             num = None
 
         # Declaration of strings

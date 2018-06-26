@@ -75,6 +75,7 @@ class LongTermAgentServer(object):
         goal.workspace_name = req.workspace_name
         goal.package_name = req.package_name
         goal.launchfile_name = req.launchfile_name
+        goal.args = req.args
         self.task_queue.append(goal)
         print('task queued...')
         return QueueTaskResponse(True)
