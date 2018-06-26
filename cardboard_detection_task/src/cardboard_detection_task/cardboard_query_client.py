@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import sys
+
 import rospy
 from cardboard_detection_task.srv import *
 from sensor_msgs.msg import CompressedImage
@@ -26,7 +27,7 @@ class Node:
         return self.img
 
 
-    def cardboard_query_client(img):
+    def cardboard_query_client(self, img):
         rospy.wait_for_service('cardboard_query')
         try:
             cardboard_query = rospy.ServiceProxy('cardboard_query', CardboardQuery)
@@ -41,17 +42,17 @@ class Node:
 def main(stop_event, args):
     image_topic = "/head_camera/rgb/image_raw/compressed"
 
-    rospy.init_node('cardboard_query_client', anonymous=True)
     node = Node(image_topic)
 
     r = rospy.Rate(1)
     while not rospy.is_shutdown() and not node.finished:
         r.sleep()
 
-    return (node.y, node.n)
+    return [node.y, node.n]
 
 
 if __name__ == "__main__":
+    rospy.init_node('cardboard_query_client', anonymous=True)
     main()
 
     #img = node.get_img()

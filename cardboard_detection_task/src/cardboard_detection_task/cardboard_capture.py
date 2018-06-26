@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-import yaml
 
 import rospy
 from tf import TransformListener, transformations
@@ -238,7 +237,7 @@ def main(stop_event, args):
                 cv2.imwrite(image_file, img_cur)
                 
                 rospy.loginfo("Image saved")
-                return yaml.dump({'status':'success', 'filepath':image_file})
+                return {'status':'success', 'filepath':image_file}
 
     else:
         rospy.loginfo(ar_tag_frame)

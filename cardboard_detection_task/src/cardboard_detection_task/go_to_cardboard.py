@@ -2,7 +2,6 @@
 
 import os
 import subprocess
-import yaml
 
 import rospy
 import actionlib
@@ -107,7 +106,7 @@ def get_smach_sm():
 def main(stop_event, args):
     ''' Takes a threading.Event to know if preemption is needed
 
-    Returns a string representing the return status (yaml?)
+    Returns a string representing the return status (json?)
     '''
     rospy.init_node('movebase_client_py')
     sm = get_smach_sm()
@@ -131,7 +130,7 @@ def main(stop_event, args):
         'waypoint_1': {'cardboard': sm.userdata.cardboard_1[0], 'no_cardboard': sm.userdata.cardboard_1[0]},
         'waypoint_2': {'cardboard': sm.userdata.cardboard_2[0], 'no_cardboard': sm.userdata.cardboard_2[0]}
         }
-        return yaml.dump(formatted_vals)
+        return formatted_vals
     else:
         return None
 
