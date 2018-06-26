@@ -4,6 +4,7 @@ import sys
 import os
 import subprocess
 import importlib
+import base64
 
 import rospy
 import rospkg
@@ -136,7 +137,7 @@ class TaskActionServer(object):
             p.kill() # so close it
 
         if success:
-            result = str(queue.get())
+            result = base64.b64encode(str(queue.get()))
             self._result.success_msg = result # get result from main, since it finished
             rospy.loginfo('{}: Succeeded'.format(self._action_name))
             rospy.loginfo('Result: {}'.format(result))

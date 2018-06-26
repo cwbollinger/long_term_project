@@ -2,6 +2,8 @@
 
 from namedlist import namedlist
 
+import base64
+
 import rospy
 import actionlib
 from actionlib_msgs.msg import GoalStatus
@@ -141,6 +143,11 @@ class LongTermAgentServer(object):
                 status = agent.action_client.get_state()
                 if status in self.TERMINAL_STATES:
                     agent.active_task = None
+
+                if status == GoalStatus.SUCCEEDED:
+                    print('Woohoo')
+                    result = agent.action_client.get_result()
+                    print(b64decode(result.success_msg))
 
 
 if __name__ == "__main__":
