@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+import yaml
+
 import rospy
 from tf import TransformListener, transformations
 from std_msgs.msg import String, Int32
@@ -129,12 +131,16 @@ class Node:
 
 
 
-def main():
+def main(stop_event, args):
 
-    rospy.init_node('capture_data_cardbaord', anonymous=True)
+    ar_tag_frame = 'tag_{}'.format(args[0])
+    if len(args) == 1 or args[1] == '':
+        image_filepath = '/home/eriksenc/cardboard_images'
+    else:
+        image_filepath = args[1]
 
-    ar_tag_frame = rospy.get_param("~ar_tag_frame")
-    image_filepath = rospy.get_param("~image_filepath")
+    #ar_tag_frame = rospy.get_param("~ar_tag_frame")
+    #image_filepath = rospy.get_param("~image_filepath")
 
     image_topic = "/head_camera/rgb/image_rect_color"
     camera_info_topic = "/head_camera/rgb/camera_info"
@@ -150,6 +156,8 @@ def main():
 
     camera_model = PinholeCameraModel()
     while node.camera_info is None:     # wait for camera info
+        if stop_event.isSet():
+            return None
         continue
     camera_model.fromCameraInfo(node.camera_info)
 
@@ -159,7 +167,9 @@ def main():
              (1.125, 0., 0.65 - offset), (1.125, 0. + offset, 0.65 - offset), (1.125, 0. + offset, 0.65), (1.125, 0. + offset, 0.65 + offset)]
 
     looking_point_index = 0
-    while not(node.tf.frameExists(ar_tag_frame) and (looking_point_index < len(looking_points))):
+    while not(node.tf.frameExists(ar_tag_frame)) and (looking_point_index < len(looking_points)):
+        if stop_event.isSet():
+            return None
 
         ps = PointStamped()
         ps.header.frame_id = robot_torso_frame
@@ -228,11 +238,14 @@ def main():
                 cv2.imwrite(image_file, img_cur)
                 
                 rospy.loginfo("Image saved")
+                return yaml.dump({'status':'success', 'filepath':image_file})
 
     else:
         rospy.loginfo(ar_tag_frame)
         rospy.loginfo("Can't see ar tag")
+        return yaml.dump({'status':'failure', 'reason':'AR tag not seen'})
 
 
 if __name__ == "__main__":
+    rospy.init_node('capture_data_cardbaord', anonymous=True)
     main()

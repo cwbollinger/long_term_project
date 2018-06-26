@@ -2,6 +2,8 @@
 
 import os
 import subprocess
+import yaml
+
 import rospy
 import actionlib
 from actionlib_msgs.msg import GoalStatus
@@ -48,16 +50,20 @@ def print_status(status):
         print("SUCCEEDED")
 
 
-@smach.cb_interface(input_keys=['counter'], output_keys=['counter'], outcomes=['succeeded'])
+@smach.cb_interface(input_keys=['counter'], output_keys=['counter', 'classification'], outcomes=['succeeded'])
 def cardboard_imaging_cb(ud):
     p = subprocess.Popen([os.path.expanduser('~/long_term_ws/devel/env.sh'), 'roslaunch', 'cardboard_detection_task', 'cardboard_capture_{}.launch'.format(ud.counter+1)])
     while p.poll() is None: # wait until launchfile exits
         pass
     ud.counter += 1
-    p = subprocess.Popen([os.path.expanduser('~/long_term_ws/devel/env.sh'), 'roslaunch', 'cardboard_detection_task', 'detect_cardboard.launch'])
-    while p.poll() is None: # wait until launchfile exits
-        pass
+
+    from cardboard_detection_task import cardboard_query_client
+    ud.classification = cardboard_query_client.main(threading.Event(), [])
+    #p = subprocess.Popen([os.path.expanduser('~/long_term_ws/devel/env.sh'), 'roslaunch', 'cardboard_detection_task', 'detect_cardboard.launch'])
+    #while p.poll() is None: # wait until launchfile exits
+    #    pass
     return 'succeeded'
+
 
 def get_smach_sm():
     sm = smach.StateMachine(outcomes=['succeeded', 'aborted', 'preempted'])
@@ -75,7 +81,8 @@ def get_smach_sm():
 
         smach.StateMachine.add('TAKE_IMAGE_1',
                                smach.CBState(cardboard_imaging_cb),
-                               {'succeeded':'GO_TO_CARDBOARD_2'})
+                               transitions={'succeeded':'GO_TO_CARDBOARD_2'},
+                               remapping={'classification':'cardboard_1'})
 
         smach.StateMachine.add('GO_TO_CARDBOARD_2',
                                smach_ros.SimpleActionState('move_base', MoveBaseAction, goal=tag_2_goal),
@@ -84,7 +91,8 @@ def get_smach_sm():
 
         smach.StateMachine.add('TAKE_IMAGE_2',
                                smach.CBState(cardboard_imaging_cb),
-                               {'succeeded':'GO_TO_DOCK'})
+                               transitions={'succeeded':'GO_TO_DOCK'},
+                               remapping={'classification':'cardboard_2'})
 
         smach.StateMachine.add('GO_TO_DOCK',
                                smach_ros.SimpleActionState('move_base', MoveBaseAction, goal=dock_goal),
@@ -93,9 +101,44 @@ def get_smach_sm():
         smach.StateMachine.add('DOCK',
                                smach_ros.SimpleActionState('dock', DockAction),
                                {'succeeded':'succeeded'})
-
     return sm
 
+
+def main(stop_event, args):
+    ''' Takes a threading.Event to know if preemption is needed
+
+    Returns a string representing the return status (yaml?)
+    '''
+    rospy.init_node('movebase_client_py')
+    sm = get_smach_sm()
+
+    smach_thread = threading.Thread(target=sm.execute)
+    smach_thread.start()
+    
+    preempted = False
+    r = rospy.Rate(10)
+    while smach_thread.isAlive():
+        if stop_event.isSet():
+            preempted = True
+            sm.request_preempt()
+            break
+        r.sleep()
+    
+    # Block until everything is preempted/completed
+    smach_thread.join()
+    if not preempted:
+        formatted_vals = {
+        'waypoint_1': {'cardboard': sm.userdata.cardboard_1[0], 'no_cardboard': sm.userdata.cardboard_1[0]},
+        'waypoint_2': {'cardboard': sm.userdata.cardboard_2[0], 'no_cardboard': sm.userdata.cardboard_2[0]}
+        }
+        return yaml.dump(formatted_vals)
+    else:
+        return None
+
+if __name__ == '__main__':
+    main(threading.Event(), [])
+
+'''
 def movebase_client():
     dock_client = actionlib.SimpleActionClient('dock', DockAction)
     dock_client.wait_for_server()
@@ -137,17 +180,4 @@ def movebase_client():
             dock_client.wait_for_result()
             print(dock_client.get_result())
             print_status(dock_client.get_state())
-
-if __name__ == '__main__':
-    try:
-        rospy.init_node('movebase_client_py')
-        sm = get_smach_sm()
-        sm.execute()
-        '''
-        result = movebase_client()
-        if result:
-            rospy.loginfo("Goal execution done!")
-        '''
-    except rospy.ROSInterruptException:
-        rospy.logwarn("Interrupt!")
-
+'''
