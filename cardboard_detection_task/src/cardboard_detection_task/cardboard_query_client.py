@@ -37,6 +37,8 @@ class Node:
             rospy.logwarn("Cardboard: " + str(resp1.a) + "\tNothing: " + str(resp1.b))
         except rospy.ServiceException, e:
             rospy.loginfo("Service call failed: %s"%e)
+            self.y = None
+            self.n = None
 
 
 def main(stop_event, args):

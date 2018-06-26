@@ -2,6 +2,7 @@
 
 import os
 import subprocess
+import threading
 
 import rospy
 import actionlib
@@ -15,14 +16,14 @@ import smach_ros
 tag_1_goal = MoveBaseGoal()
 tag_1_goal.target_pose.header.frame_id = "map"
 tag_1_goal.target_pose.pose.position.x = -14.6
-tag_1_goal.target_pose.pose.position.y = 3.2199
+tag_1_goal.target_pose.pose.position.y = 4.2199
 tag_1_goal.target_pose.pose.orientation.z = -0.731
 tag_1_goal.target_pose.pose.orientation.w = 0.6825
 
 tag_2_goal = MoveBaseGoal()
 tag_2_goal.target_pose.header.frame_id = "map"
-tag_2_goal.target_pose.pose.position.x = -0.076
-tag_2_goal.target_pose.pose.position.y = 4.738
+tag_2_goal.target_pose.pose.position.x = -0.446
+tag_2_goal.target_pose.pose.position.y = 4.338
 tag_2_goal.target_pose.pose.orientation.z = -0.735
 tag_2_goal.target_pose.pose.orientation.w = 0.6778
 
@@ -67,6 +68,8 @@ def cardboard_imaging_cb(ud):
 def get_smach_sm():
     sm = smach.StateMachine(outcomes=['succeeded', 'aborted', 'preempted'])
     sm.userdata.counter = 0
+    sm.userdata.cardboard_1 = (None, None)
+    sm.userdata.cardboard_2 = (None, None)
 
     with sm:
         smach.StateMachine.add('UNDOCK',
@@ -108,7 +111,6 @@ def main(stop_event, args):
 
     Returns a string representing the return status (json?)
     '''
-    rospy.init_node('movebase_client_py')
     sm = get_smach_sm()
 
     smach_thread = threading.Thread(target=sm.execute)
@@ -130,11 +132,25 @@ def main(stop_event, args):
         'waypoint_1': {'cardboard': sm.userdata.cardboard_1[0], 'no_cardboard': sm.userdata.cardboard_1[0]},
         'waypoint_2': {'cardboard': sm.userdata.cardboard_2[0], 'no_cardboard': sm.userdata.cardboard_2[0]}
         }
-        return formatted_vals
-    else:
-        return None
+#    else if sm.userdata.cardboard_2[0] is not None:
+#        formatted_vals = {
+#        'waypoint_1': {'cardboard': sm.userdata.cardboard_1[0], 'no_cardboard': sm.userdata.cardboard_1[0]},
+#        'waypoint_2': {'cardboard': sm.userdata.cardboard_2[0], 'no_cardboard': sm.userdata.cardboard_2[0]}
+#        }
+#    else if sm.userdata.cardboard_1[0] is not None:
+#        formatted_vals = {
+#        'waypoint_1': {'cardboard': sm.userdata.cardboard_1[0], 'no_cardboard': sm.userdata.cardboard_1[0]},
+#        'waypoint_2': {'cardboard': "None", 'no_cardboard': "None"}
+#        }
+#    else:
+#        formatted_vals = {
+#        'waypoint_1': {'cardboard': "None", 'no_cardboard': "None"},
+#        'waypoint_2': {'cardboard': "None", 'no_cardboard': "None"}
+#        }
+    return formatted_vals
 
 if __name__ == '__main__':
+    rospy.init_node('movebase_client_py')
     main(threading.Event(), [])
 
 '''
