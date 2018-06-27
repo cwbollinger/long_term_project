@@ -13,6 +13,7 @@ class Node:
         self.img = None
         self.called = False
         self.finished = False
+        self.feedback_pub = rospy.Publisher('/active_feedback', String, queue_size=10)
         self.sub = rospy.Subscriber(image_topic, CompressedImage, self.image_callback)
 
     def image_callback(self, img):
@@ -28,14 +29,19 @@ class Node:
 
 
     def cardboard_query_client(self, img):
+        self.feedback_pub.publish('Waiting for cardboard query service...')
         rospy.wait_for_service('cardboard_query')
+        self.feedback_pub.publish('Service Found!')
         try:
             cardboard_query = rospy.ServiceProxy('cardboard_query', CardboardQuery)
+            self.feedback_pub.publish('Sending Image to Server for processing...')
             resp1 = cardboard_query(img)
+            self.feedback_pub.publish('Response Received!')
             self.y = resp1.a
             self.n = resp1.b
-            rospy.logwarn("Cardboard: " + str(resp1.a) + "\tNothing: " + str(resp1.b))
+            rospy.info("Cardboard: " + str(resp1.a) + "\tNothing: " + str(resp1.b))
         except rospy.ServiceException, e:
+            self.feedback_pub.publish('Service Call Failed...')
             rospy.loginfo("Service call failed: %s"%e)
             self.y = None
             self.n = None

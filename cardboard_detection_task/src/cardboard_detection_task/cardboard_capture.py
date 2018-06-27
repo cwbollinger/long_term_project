@@ -30,6 +30,7 @@ class Node:
         self.bridge = CvBridge()
         self.tf = TransformListener()
         # rospy.Subscriber(robot_pose_topic, PoseWithCovarianceStamped, self.robot_pose_topic)
+        self.feedback_pub = rospy.Publisher('/active_feedback', String, queue_size=10)
         rospy.Subscriber(image_topic, Image, self.image_callback)
         # rospy.Subscriber(points_topic, PointCloud2, self.pc_callback)
         rospy.Subscriber(camera_info_topic, CameraInfo, self.camera_info_callback)
@@ -40,16 +41,20 @@ class Node:
         self.camera_info = None
 
         # base movement
+        self.feedback_pub.publish("Waiting for move base...")
         self.base_client = actionlib.SimpleActionClient('move_base', MoveBaseAction)
         self.base_client.wait_for_server()
+        self.feedback_pub.publish("Move Base ready.")
 
         # # torso movement
         # self.torso_client = actionlib.SimpleActionClient(torso_movement_topic, SingleJointPositionAction)
         # self.torso_client.wait_for_server()
 
         # # head movement
+        self.feedback_pub.publish("Waiting for head control action server...")
         self.point_head_client = actionlib.SimpleActionClient(head_movement_topic, PointHeadAction)
         self.point_head_client.wait_for_server()
+        self.feedback_pub.publish("head control server ready.")
 
         rospy.loginfo("move group")
         #self.move_group = MoveGroupInterface("arm_with_torso", "base_link")
@@ -165,6 +170,7 @@ def main(stop_event, args):
              (1.125, 0., 0.65 - offset), (1.125, 0. + offset, 0.65 - offset), (1.125, 0. + offset, 0.65), (1.125, 0. + offset, 0.65 + offset)]
 
     looking_point_index = 0
+    node.feedback_pub.publish("Looking for AR Tag...")
     while not(node.tf.frameExists(ar_tag_frame)) and (looking_point_index < len(looking_points)):
         if stop_event.isSet():
             return None
@@ -185,6 +191,7 @@ def main(stop_event, args):
 
 
     if node.tf.frameExists(ar_tag_frame):
+        node.feedback_pub.publish("AR Tag Found!")
 
         # fixed points relative to ar tag
         ps = PointStamped()
@@ -239,6 +246,7 @@ def main(stop_event, args):
                 return {'status':'success', 'filepath':image_file}
 
     else:
+        node.feedback_pub.publish("Can't find AR Tag, failure")
         rospy.loginfo(ar_tag_frame)
         rospy.loginfo("Can't see ar tag")
         return yaml.dump({'status':'failure', 'reason':'AR tag not seen'})

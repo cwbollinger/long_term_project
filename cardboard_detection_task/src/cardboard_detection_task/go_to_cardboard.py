@@ -15,10 +15,10 @@ import smach_ros
 
 tag_1_goal = MoveBaseGoal()
 tag_1_goal.target_pose.header.frame_id = "map"
-tag_1_goal.target_pose.pose.position.x = -14.6
-tag_1_goal.target_pose.pose.position.y = 4.2199
-tag_1_goal.target_pose.pose.orientation.z = -0.731
-tag_1_goal.target_pose.pose.orientation.w = 0.6825
+tag_1_goal.target_pose.pose.position.x = -14.58
+tag_1_goal.target_pose.pose.position.y = 4.10
+tag_1_goal.target_pose.pose.orientation.z = -0.705
+tag_1_goal.target_pose.pose.orientation.w = 0.709
 
 tag_2_goal = MoveBaseGoal()
 tag_2_goal.target_pose.header.frame_id = "map"
@@ -29,10 +29,10 @@ tag_2_goal.target_pose.pose.orientation.w = 0.6778
 
 dock_goal = MoveBaseGoal()
 dock_goal.target_pose.header.frame_id = "map"
-dock_goal.target_pose.pose.position.x = -1.053
-dock_goal.target_pose.pose.position.y = -0.123
-dock_goal.target_pose.pose.orientation.z = 0.055
-dock_goal.target_pose.pose.orientation.w = 0.998
+dock_goal.target_pose.pose.position.x = -1.0
+dock_goal.target_pose.pose.position.y = -0.0
+dock_goal.target_pose.pose.orientation.z = 0.0
+dock_goal.target_pose.pose.orientation.w = 1.0
 
 goals = [tag_1_goal, tag_2_goal, dock_goal]
 
@@ -111,8 +111,12 @@ def main(stop_event, args):
 
     Returns a string representing the return status (json?)
     '''
+
+    feedback_pub = rospy.Publisher('/active_feedback', String, queue_size=10)
+
     sm = get_smach_sm()
 
+    feedback_pub.publish('Starting state machine in separate thread...')
     smach_thread = threading.Thread(target=sm.execute)
     smach_thread.start()
     
@@ -120,6 +124,7 @@ def main(stop_event, args):
     r = rospy.Rate(10)
     while smach_thread.isAlive():
         if stop_event.isSet():
+            feedback_pub.publish('Task Preempted!')
             preempted = True
             sm.request_preempt()
             break
@@ -127,6 +132,7 @@ def main(stop_event, args):
     
     # Block until everything is preempted/completed
     smach_thread.join()
+    feedback_pub.publish('State Machine Finished!')
     if not preempted:
         formatted_vals = {
         'waypoint_1': {'cardboard': sm.userdata.cardboard_1[0], 'no_cardboard': sm.userdata.cardboard_1[0]},

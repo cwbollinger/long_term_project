@@ -55,16 +55,16 @@ class Node:
         img = self.convert(req)
         # img = image_loader(img_file, self.loader)
         img = img.unsqueeze(0)
-        rospy.logwarn(type(img))
-        rospy.logwarn(img.shape)
+        #rospy.logwarn(type(img))
+        #rospy.logwarn(img.shape)
 
         output, bn_features, features_no_bn = self.model(img)
 
-        rospy.logwarn("Made it to here!")
+        #rospy.logwarn("Made it to here!")
 
         response = list(output.data.cpu().numpy()[0])
 
-        rospy.logwarn(response)
+        rospy.logwarn('Result: {}'.format(response))
 
         return CardboardQueryResponse(response[0], response[1])
 
