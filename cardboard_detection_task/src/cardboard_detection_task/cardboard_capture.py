@@ -23,7 +23,6 @@ import random
 import datetime
 
 
-
 class Node:
     def __init__(self, image_topic, camera_info_topic, camera_frame, torso_movement_topic, head_movement_topic):
 
@@ -134,7 +133,7 @@ def main(stop_event, args):
 
     ar_tag_frame = 'tag_{}'.format(args[0])
     if len(args) == 1 or args[1] == '':
-        image_filepath = '/home/eriksenc/cardboard_images'
+        image_filepath = '/home/eriksenc/cardboard_images/capture'
     else:
         image_filepath = args[1]
 
@@ -232,7 +231,7 @@ def main(stop_event, args):
                 height, width, channels = img_cur.shape
 
                 # save image along with pos annotations
-                cur_time = str(datetime.datetime.now())
+                cur_time = datetime.datetime.now().isoformat()
                 image_file = image_filepath + "_" + cur_time + '.png'
                 cv2.imwrite(image_file, img_cur)
                 
