@@ -61,6 +61,7 @@ class TaskActionServer(object):
 
     def __init__(self, name):
         print('Action Server Init')
+        self.feedback_sub = rospy.Subscriber('/active_feedback', String, self.update_active_feedback)
         self._action_name = name
         self._as = actionlib.SimpleActionServer("{}/active".format(self._action_name), TaskAction, execute_cb=self.execute_cb, auto_start=False)
         self._as.start()
@@ -75,6 +76,9 @@ class TaskActionServer(object):
         pkg_name = rospkg.get_package_name(current_path)
         ws_name = current_path.split('src/{}'.format(pkg_name))[0]
         self.ws_name = os.path.split(ws_name[:-1])[1]
+
+    def update_active_feedback(self, msg):
+        self._feedback.status = msg.data
 
     '''
     def start_continuous_task(self, gh):

@@ -102,6 +102,7 @@ class LongTermAgentServer(object):
             if len(self.task_queue) == 0:
                 return
             if agent.action_client == None:
+               print('agent {} not initialized yet, ignoring for now...'.format(agent.name))
                continue # not initialized fully, move on
             status = agent.action_client.get_state()
             if status in self.TERMINAL_STATES:
@@ -125,7 +126,7 @@ class LongTermAgentServer(object):
 
         for i, agent in enumerate(self.agents):
             if agent.active_task != None:
-                print('{}: {:.3f}s since last ping'.format(agent.name, t-agent.last_ping_time))
+                #print('{}: {:.3f}s since last ping'.format(agent.name, t-agent.last_ping_time))
                 if t - agent.last_ping_time > 10:
                     print('{} seems disconnected, requeueing task and removing agent from pool'.format(agent.name))
                     self.task_queue.append(agent.active_task) # recover task so it is not lost
