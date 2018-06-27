@@ -78,7 +78,9 @@ class TaskActionServer(object):
         self.ws_name = os.path.split(ws_name[:-1])[1]
 
     def update_active_feedback(self, msg):
+        ''' update feedback message and immediately send it. '''
         self._feedback.status = msg.data
+        self._as.publish_feedback(self._feedback)
 
     '''
     def start_continuous_task(self, gh):
