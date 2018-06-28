@@ -216,6 +216,7 @@ def main(stop_event, args):
 
         # make robot look at object
         rospy.loginfo("Turning head toward cardboard")
+        node.feedback_pub.publish("Looking at cardboard")
         node.look_at("/map", ps_new.point.x, ps_new.point.y, ps_new.point.z)
         result = node.point_head_client.wait_for_result()
         rospy.loginfo(result)
@@ -224,6 +225,7 @@ def main(stop_event, args):
         if result == True:
 
             rospy.loginfo("Head turn succeeded")
+            node.feedback_pub.publish("Head turn succeeded")
 
             rospy.sleep(.1)
 
@@ -234,6 +236,7 @@ def main(stop_event, args):
             if (img_cur is not None):
 
                 rospy.loginfo("Capturing image")
+                node.feedback_pub.publish("Capturing Image")
 
                 height, width, channels = img_cur.shape
 
@@ -243,6 +246,7 @@ def main(stop_event, args):
                 cv2.imwrite(image_file, img_cur)
                 
                 rospy.loginfo("Image saved")
+                node.feedback_pub.publish("Image Saved")
                 return {'status':'success', 'filepath':image_file}
 
     else:
