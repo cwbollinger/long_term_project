@@ -4,6 +4,7 @@ import sys
 
 import rospy
 from cardboard_detection_task.srv import *
+from std_msgs.msg import String
 from sensor_msgs.msg import CompressedImage
 
 
@@ -39,10 +40,10 @@ class Node:
             self.feedback_pub.publish('Response Received!')
             self.y = resp1.a
             self.n = resp1.b
-            rospy.info("Cardboard: " + str(resp1.a) + "\tNothing: " + str(resp1.b))
+            rospy.loginfo("Cardboard: " + str(resp1.a) + "\tNothing: " + str(resp1.b))
         except rospy.ServiceException, e:
             self.feedback_pub.publish('Service Call Failed...')
-            rospy.loginfo("Service call failed: %s"%e)
+            rospy.logwarn("Service call failed: %s"%e)
             self.y = None
             self.n = None
 

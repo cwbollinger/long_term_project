@@ -6,6 +6,7 @@ import threading
 
 import rospy
 import actionlib
+from std_msgs.msg import String
 from actionlib_msgs.msg import GoalStatus
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from fetch_auto_dock_msgs.msg import DockAction, DockGoal, UndockAction, UndockGoal
