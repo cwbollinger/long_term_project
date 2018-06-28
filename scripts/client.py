@@ -11,6 +11,7 @@ import rospkg
 import actionlib
 from long_term_deployment.msg import *
 from long_term_deployment.srv import *
+from std_msgs.msg import String
 from std_srvs.srv import Empty
 import threading
 import Queue
