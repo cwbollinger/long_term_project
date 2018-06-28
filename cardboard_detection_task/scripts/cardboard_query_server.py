@@ -64,12 +64,12 @@ class Node:
 
         response = list(output.data.cpu().numpy()[0])
 
-        rospy.logwarn('Result: {}'.format(response))
+        rospy.loginfo('Result: {}'.format(response))
 
         return CardboardQueryResponse(response[0], response[1])
 
     def convert(self, req):
-        rospy.logwarn(req.img)
+        #rospy.logwarn(req.img)
         cv_img = self.bridge.compressed_imgmsg_to_cv2(req.img)
         cv_img = cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB)
         img = Image.fromarray(cv_img)
