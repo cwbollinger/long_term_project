@@ -29,13 +29,12 @@ class LongTermAgentServer(object):
         self.agents = []
         self.task_queue = []
         rospy.init_node('task_server')
-        name = rospy.get_name()
-        self.s1 = rospy.Service('{}/register_agent'.format(name), RegisterAgent, self.handle_register_agent)
-        self.s2 = rospy.Service('{}/unregister_agent'.format(name), UnregisterAgent, self.handle_unregister_agent)
-        self.s3 = rospy.Service('{}/get_agents'.format(name), GetRegisteredAgents, self.handle_get_agents)
-        self.s4 = rospy.Service('{}/queue_task'.format(name), QueueTask, self.queue_task)
-        self.s5 = rospy.Service('{}/get_queued_tasks'.format(name), QueueTaskList, self.get_queued_tasks)
-        self.s6 = rospy.Service('{}/get_active_tasks'.format(name), ActiveTaskList, self.get_active_tasks)
+        self.s1 = rospy.Service('~register_agent', RegisterAgent, self.handle_register_agent)
+        self.s2 = rospy.Service('~unregister_agent', UnregisterAgent, self.handle_unregister_agent)
+        self.s3 = rospy.Service('~get_agents', GetRegisteredAgents, self.handle_get_agents)
+        self.s4 = rospy.Service('~queue_task', QueueTask, self.queue_task)
+        self.s5 = rospy.Service('~get_queued_tasks', QueueTaskList, self.get_queued_tasks)
+        self.s6 = rospy.Service('~get_active_tasks', ActiveTaskList, self.get_active_tasks)
 
     def main(self):
         rate = rospy.Rate(1)

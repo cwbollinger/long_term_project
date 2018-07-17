@@ -59,11 +59,11 @@ class TaskActionServer(object):
     _feedback = TaskFeedback()
     _result = TaskResult()
 
-    def __init__(self, name):
+    def __init__(self):
         print('Action Server Init')
-        self.feedback_sub = rospy.Subscriber('/active_feedback', String, self.update_active_feedback)
+        self.feedback_sub = rospy.Subscriber('~active_feedback', String, self.update_active_feedback)
         self._action_name = name
-        self._as = actionlib.SimpleActionServer("{}/active".format(self._action_name), TaskAction, execute_cb=self.execute_cb, auto_start=False)
+        self._as = actionlib.SimpleActionServer("~active", TaskAction, execute_cb=self.execute_cb, auto_start=False)
         self._as.start()
 
         # Continous Task tracking/server
@@ -82,29 +82,27 @@ class TaskActionServer(object):
         self._feedback.status = msg.data
         self._as.publish_feedback(self._feedback)
 
-    '''
-    def start_continuous_task(self, gh):
-        self.continuous_lock.acquire()
-        self.continuous_tasks[gh.get_goal_id()] = False
-        self.continuous_lock.release()
-        task_thread = threading.Thread(target = self.continuous_task_entry, args = (gh,))
-        task_thread.start()
-
-    def stop_continuous_task(self, gh):
-        self.continuous_lock.acquire()
-        self.continuous_tasks[gh.get_goal_id()] = True
-        self.continuous_lock.release()
-
-    def continuous_task_entry(self, gh):
-        success = True
-        print('Incoming Continuous Task...')
-        feedback = TaskFeedback(status="Continuous Task Ping")
-        result = TaskFeedback(success_msg="It works?")
-        gh.set_accepted()
-        goal = gh.get_goal()
-        self._as_continuous.publish_feedback(feedback)
-        workspace_name = goal.workspace_name if goal.workspace_name != '' else self.ws_name
-    '''
+#    def start_continuous_task(self, gh):
+#        self.continuous_lock.acquire()
+#        self.continuous_tasks[gh.get_goal_id()] = False
+#        self.continuous_lock.release()
+#        task_thread = threading.Thread(target = self.continuous_task_entry, args = (gh,))
+#        task_thread.start()
+#
+#    def stop_continuous_task(self, gh):
+#        self.continuous_lock.acquire()
+#        self.continuous_tasks[gh.get_goal_id()] = True
+#        self.continuous_lock.release()
+#
+#    def continuous_task_entry(self, gh):
+#        success = True
+#        print('Incoming Continuous Task...')
+#        feedback = TaskFeedback(status="Continuous Task Ping")
+#        result = TaskFeedback(success_msg="It works?")
+#        gh.set_accepted()
+#        goal = gh.get_goal()
+#        self._as_continuous.publish_feedback(feedback)
+#        workspace_name = goal.workspace_name if goal.workspace_name != '' else self.ws_name
 
     def execute_cb(self, goal):
         workspace_name = goal.workspace_name if goal.workspace_name != '' else self.ws_name
@@ -154,11 +152,11 @@ class TaskActionServer(object):
 if __name__ == "__main__":
     #name = 'fetch'
     name = rospy.get_param("/agent_name", "default")
+    task_interface = TaskActionServer()
     server_client = LongTermAgentClient()
     agent_name = server_client.register_agent(name, name)
-    namespace = '{}_agent'.format(agent_name)
-    rospy.init_node('{}'.format(namespace))
-    task_interface = TaskActionServer(namespace)
+    rospy.init_node('{}_agent'.format(agent_name))
+
     def stop_agent():
         #task_interface.continuous_lock.acquire()
         #for task in task_interface.continuous_tasks:
