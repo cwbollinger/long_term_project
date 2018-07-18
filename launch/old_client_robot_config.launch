@@ -6,9 +6,14 @@
     rosbridge_port: 9090
     # Topics being published remotely to expose locally
     remote_topics: [
+                        ['/fetch_agent/active/cancel', 'actionlib_msgs/GoalID'],
+                        ['/fetch_agent/active/goal', 'long_term_deployment/TaskActionGoal']
                    ]
     # Topics being published in the local roscore to expose remotely
     local_topics: [
+                        ['/fetch_agent/active/feedback', 'long_term_deployment/TaskActionFeedback'],
+                        ['/fetch_agent/active/result', 'long_term_deployment/TaskActionResult'],
+                        ['/fetch_agent/active/status', 'actionlib_msgs/GoalStatusArray'],
                         ['/map', 'nav_msgs/OccupancyGrid']
                   ]
     # Services running remotely to expose locally
@@ -27,7 +32,5 @@
 
     </rosparam>
   </node>
-  <node pkg="long_term_deployment" name="robot_client" type="client.py" output="screen">
-    <param name="agent_name" value="fetch"/>
-  </node>
+  <node pkg="long_term_deployment" name="robot_client" type="client.py" output="screen"/>
 </launch>

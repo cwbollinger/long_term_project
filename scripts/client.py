@@ -151,12 +151,11 @@ class TaskActionServer(object):
 
 
 if __name__ == "__main__":
-    #name = 'fetch'
-    name = rospy.get_param("/agent_name", "default")
+    rospy.init_node('robot_client')
+    name = rospy.get_param("~agent_name", "default")
     task_interface = TaskActionServer()
     server_client = LongTermAgentClient()
     agent_name = server_client.register_agent(name, name)
-    rospy.init_node('{}_agent'.format(agent_name))
 
     def stop_agent():
         #task_interface.continuous_lock.acquire()
