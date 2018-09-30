@@ -5,14 +5,15 @@ import os
 import curses
 
 import rospy
-from long_term_deployment.srv import *
-
+from long_term_deployment.msg import AgentDescription, Task
+from long_term_deployment.srv import GetRegisteredAgents, QueueTask, QueueTaskList, AgentStatusList
 
 def draw_menu(stdscr):
     global agents_proxy
     global queued_tasks_proxy
     global active_tasks_proxy
-    global queue_task_proxy
+    global queue_active_task_proxy
+    global start_continuous_task_proxy
 
     curses.raw()
     curses.cbreak()
@@ -40,30 +41,35 @@ def draw_menu(stdscr):
             # convert to numeric
             num = k-48
 
-
         # Initialization
         stdscr.clear()
         height, width = stdscr.getmaxyx()
 
         agents = [a.agent_name for a in agents_proxy().agents]
-        queued_tasks = [t.data for t in queued_tasks_proxy().tasks]
-        active_agents = [a.data for a in active_tasks_proxy().agents]
-        active_tasks = [t.data for t in active_tasks_proxy().tasks]
+        queued_tasks = ['{}/{}'.format(t.package_name, t.launchfile_name) for t in queued_tasks_proxy().tasks]
+        agent_tasks = {}
+        active_tasks = []
+        for a in active_tasks_proxy().agent_statuses:
+            agent_tasks[a.agent.agent_name] = {
+                    'active_task': a.active_task.launchfile_name,
+                    'background_tasks': [t.launchfile_name for t in a.background_tasks],
+            }
 
         if num == 0:
-            queue_task_proxy('','long_term_deployment','test_task', ['5'])
+            queue_active_task_proxy(Task('','long_term_deployment','test_task', ['5']), AgentDescription('turtlebot', 'turtlebot'))
+
             num = None
         elif num == 1:
-            queue_task_proxy('','cardboard_detection_task','cardboard_capture', ['1'])
+            queue_active_task_proxy(Task('','cardboard_detection_task','cardboard_capture', ['1']))
             num = None
         elif num == 2:
-            queue_task_proxy('','cardboard_detection_task','cardboard_capture', ['2'])
+            queue_active_task_proxy(Task('','cardboard_detection_task','cardboard_capture', ['2']))
             num = None
         elif num == 3:
-            queue_task_proxy('','cardboard_detection_task','cardboard_query_client', [])
+            start_continuous_task_proxy(Task('','navigation_tasks','navigate_on_map', ['maze']), AgentDescription('turtlebot', 'turtlebot'))
             num = None
         elif num == 4:
-            queue_task_proxy('','cardboard_detection_task','go_to_cardboard', [])
+            queue_active_task_proxy(Task('','cardboard_detection_task','go_to_cardboard', []))
             num = None
 
         # Declaration of strings
@@ -74,7 +80,7 @@ def draw_menu(stdscr):
         stdscr.addstr(int(height//2)+1, 0, 'Press "0" to queue "test_task"')
         stdscr.addstr(int(height//2)+2, 0, 'Press "1" to queue "cardboard_capture_1"')
         stdscr.addstr(int(height//2)+3, 0, 'Press "2" to queue "cardboard_capture_2"')
-        stdscr.addstr(int(height//2)+4, 0, 'Press "3" to queue "detect_cardboard"')
+        stdscr.addstr(int(height//2)+4, 0, 'Press "3" to start navigation on turtlebot agent')
         stdscr.addstr(int(height//2)+5, 0, 'Press "4" to queue "go_to_cardboard"')
         for i in range(1, int(height//2)):
             stdscr.addstr(i, 15, '|')
@@ -83,20 +89,19 @@ def draw_menu(stdscr):
 
         stdscr.addstr(1, 3, "Agent")
         stdscr.addstr(1, 22, "Active task")
-        stdscr.addstr(1, 75,"Task Queue")
+        stdscr.addstr(1, 41, "Continuous tasks")
+        stdscr.addstr(1, 68,"Task Queue")
 
         for i, agent in enumerate(agents):
             stdscr.addstr(i+3, 2, agent)
-            if agent in active_agents:
-                idx = active_agents.index(agent)
-                try:
-                    stdscr.addstr(i+3, 22, active_tasks[idx])
-                except:
-                    print(active_agents)
-                    print(active_tasks)
-                    sys.exit()
-            else:
+            
+            active_task = agent_tasks[agent]['active_task']
+            if active_task is None:
                 stdscr.addstr(i+3, 22, "Inactive")
+            else:
+                stdscr.addstr(i+3, 22, active_task)
+
+            stdscr.addstr(i+3, 41, str(agent_tasks[agent]['background_tasks']))
 
         for i, task in enumerate(queued_tasks):
             stdscr.addstr(i+3, 62, task)
@@ -125,10 +130,12 @@ if __name__ == "__main__":
     agents_proxy = rospy.ServiceProxy('/task_server/get_agents', GetRegisteredAgents)
     rospy.wait_for_service('/task_server/get_queued_tasks')
     queued_tasks_proxy = rospy.ServiceProxy('/task_server/get_queued_tasks', QueueTaskList)
-    rospy.wait_for_service('/task_server/get_active_tasks')
-    active_tasks_proxy = rospy.ServiceProxy('/task_server/get_active_tasks', ActiveTaskList)
+    rospy.wait_for_service('/task_server/get_agents_status')
+    active_tasks_proxy = rospy.ServiceProxy('/task_server/get_agents_status', AgentStatusList)
     rospy.wait_for_service('/task_server/queue_task')
-    queue_task_proxy = rospy.ServiceProxy('/task_server/queue_task', QueueTask)
+    queue_active_task_proxy = rospy.ServiceProxy('/task_server/queue_task', QueueTask)
+    rospy.wait_for_service('/task_server/start_continuous_task')
+    start_continuous_task_proxy = rospy.ServiceProxy('/task_server/start_continuous_task', QueueTask)
 
     main()
 

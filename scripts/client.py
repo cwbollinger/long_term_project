@@ -9,8 +9,9 @@ import base64
 import rospy
 import rospkg
 import actionlib
-from long_term_deployment.msg import *
-from long_term_deployment.srv import *
+from actionlib_msgs.msg import GoalStatus
+from long_term_deployment.msg import AgentDescription, Task, TaskFeedback, TaskResult, TaskAction
+from long_term_deployment.srv import RegisterAgent, UnregisterAgent, GetRegisteredAgents
 from std_msgs.msg import String
 from std_srvs.srv import Empty
 import threading
@@ -68,54 +69,115 @@ class TaskActionServer(object):
         self._as.start()
 
         # Continous Task tracking/server
-        #self.continuous_tasks = {}
-        #self.continuous_lock = threading.RLock()
-        #self._as_continuous = actionlib.ActionServer("{}/continuous".format(self._action_name), TaskAction, self.start_continuous_task, self.stop_continuous_task, auto_start=False)
-        #self._as_continuous.start()
+        self.continuous_tasks = {}
+        self.continuous_lock = threading.RLock()
+        self._as_continuous = actionlib.ActionServer("~continuous", TaskAction, self.start_continuous_task, self.stop_continuous_task, auto_start=False)
+        self._as_continuous.start()
 
         current_path = os.path.abspath(__file__)
         pkg_name = rospkg.get_package_name(current_path)
-        ws_name = current_path.split('src/{}'.format(pkg_name))[0]
-        self.ws_name = os.path.split(ws_name[:-1])[1]
+        ws_name = current_path.split('src/')[0]
+        self.ws_name = ws_name[:-1]
+        #print(self.ws_name)
 
     def update_active_feedback(self, msg):
         ''' update feedback message and immediately send it. '''
         self._feedback.status = msg.data
         self._as.publish_feedback(self._feedback)
 
-#    def start_continuous_task(self, gh):
-#        self.continuous_lock.acquire()
-#        self.continuous_tasks[gh.get_goal_id()] = False
-#        self.continuous_lock.release()
-#        task_thread = threading.Thread(target = self.continuous_task_entry, args = (gh,))
-#        task_thread.start()
-#
-#    def stop_continuous_task(self, gh):
-#        self.continuous_lock.acquire()
-#        self.continuous_tasks[gh.get_goal_id()] = True
-#        self.continuous_lock.release()
-#
-#    def continuous_task_entry(self, gh):
-#        success = True
-#        print('Incoming Continuous Task...')
-#        feedback = TaskFeedback(status="Continuous Task Ping")
-#        result = TaskFeedback(success_msg="It works?")
-#        gh.set_accepted()
-#        goal = gh.get_goal()
-#        self._as_continuous.publish_feedback(feedback)
-#        workspace_name = goal.workspace_name if goal.workspace_name != '' else self.ws_name
+    def start_continuous_task(self, gh):
+        with self.continuous_lock:
+            self.continuous_tasks[gh.get_goal_id()] = False
+            task_thread = threading.Thread(target = self.continuous_task_entry, args = (gh,))
+            task_thread.start()
+
+    def stop_continuous_task(self, gh):
+        with self.continuous_lock:
+            self.continuous_tasks[gh.get_goal_id()] = True
+
+    def continuous_task_entry(self, gh):
+        success = True
+        print('Incoming Continuous Task...')
+        feedback = TaskFeedback(status="Continuous Task Ping")
+        gh.set_accepted()
+        goal = gh.get_goal()
+        gh.publish_feedback(feedback)
+        #self._as_continuous.publish_feedback(gh.get_goal_status(), feedback)
+        if goal.task.workspace_name == '':
+            workspace_name = self.ws_name
+        else:
+            workspace_name = '~/{}'.format(goal.task.workspace_name)
+
+        #print('{}/devel/env.sh'.format(workspace_name))
+        cmdlist = [os.path.expanduser('{}/devel/env.sh').format(workspace_name), 'roslaunch', goal.task.package_name, "{}.launch".format(goal.task.launchfile_name)]
+        print(cmdlist)
+        p = subprocess.Popen(cmdlist)
+        print('checkpoint')
+
+        r = rospy.Rate(10)
+        success = True
+        has_script = True # we assume there's an active part of the "task"
+        try:
+            task = importlib.import_module("{}.{}".format(goal.task.package_name, goal.task.launchfile_name))
+            #print(dir(task))
+            func = getattr(task, 'main')
+
+            def t_main(s, q): # make the main() in each task less nasty
+                q.put(func(stopEvent, goal.task.args))
+                return q
+
+            feedback.status = "Starting Continuous Task..."
+            stopEvent = threading.Event()
+            queue = Queue.Queue()
+
+            task_thread = threading.Thread(target = t_main, args = (stopEvent, queue))
+            task_thread.start()
+
+            while task_thread.isAlive():
+                self._as_continuous.publish_feedback(feedback)
+                # check that preempt has not been requested by the client
+                with self.continuous_lock:
+                    if self.continuous_tasks[gh.get_goal_id()]:
+                        rospy.loginfo('%s: Continuous Task Preempted' % self._action_name)
+                        stopEvent.set() # end main, we're done
+                        success = False
+                        break
+                r.sleep()
+        except ImportError: # Continuous tasks may not have a script component
+            has_script = False
+            while not rospy.is_shutdown():
+                with self.continuous_lock:
+                    if self.continuous_tasks[gh.get_goal_id()]:
+                        rospy.loginfo('%s: Continuous Task Shutdown Requested' % self._action_name)
+                        stopEvent.set() # end main, we're done
+                        break
+
+        if p.poll() is None: # launchfile hasn't closed yet
+            p.kill() # close it
+
+        if success and has_script: # what should non-script launchfiles return on success?
+            result = base64.b64encode(str(queue.get())) # needed so json serialization works
+            result = TaskFeedback(success_msg=result) # get result from main, since it finished
+
+            rospy.loginfo('{}: Continuous Task {} Succeeded'.format(self._action_name, goal.task.launchfile_name))
+            rospy.loginfo('Result: {}'.format(result))
+            rospy.loginfo('Queue len: {}'.format(queue.qsize()))
+            self._as_continuous.publish_result(result)
 
     def execute_cb(self, goal):
-        workspace_name = goal.workspace_name if goal.workspace_name != '' else self.ws_name
-        # Startup dependencies
-        p = subprocess.Popen([os.path.expanduser('~/{}/devel/env.sh').format(workspace_name), 'roslaunch', goal.package_name, "{}.launch".format(goal.launchfile_name)])
+        workspace_name = '~/{}'.format(goal.task.workspace_name) if goal.task.workspace_name != '' else self.ws_name
 
-        task = importlib.import_module("{}.{}".format(goal.package_name, goal.launchfile_name))
-        print(dir(task))
+        print('{}/devel/env.sh'.format(workspace_name))
+        # Startup dependencies
+        print(goal.task.package_name, goal.task.launchfile_name)
+        p = subprocess.Popen([os.path.expanduser('{}/devel/env.sh').format(workspace_name), 'roslaunch', goal.task.package_name, "{}.launch".format(goal.task.launchfile_name)])
+
+        task = importlib.import_module("{}.{}".format(goal.task.package_name, goal.task.launchfile_name))
+        #print(dir(task))
         func = getattr(task, 'main')
 
         def t_main(s, q): # make the main() in each task less nasty
-            q.put(func(stopEvent, goal.args))
+            q.put(func(stopEvent, goal.task.args))
             return q
 
         self._feedback.status = "Starting..."
@@ -139,10 +201,10 @@ class TaskActionServer(object):
             r.sleep()
 
         if p.poll() is None: # launchfile hasn't closed yet
-            p.kill() # so close it
+            p.kill() # close it
 
         if success:
-            result = base64.b64encode(str(queue.get()))
+            result = base64.b64encode(str(queue.get())) # needed so json serialization works
             self._result.success_msg = result # get result from main, since it finished
             rospy.loginfo('{}: Succeeded'.format(self._action_name))
             rospy.loginfo('Result: {}'.format(result))
@@ -158,10 +220,10 @@ if __name__ == "__main__":
     agent_name = server_client.register_agent(name, name)
 
     def stop_agent():
-        #task_interface.continuous_lock.acquire()
-        #for task in task_interface.continuous_tasks:
-        #    task_interface.continuous_tasks[task] = True
-        #task_interface.continuous_lock.release()
+        task_interface.continuous_lock.acquire()
+        for task in task_interface.continuous_tasks:
+            task_interface.continuous_tasks[task] = True
+        task_interface.continuous_lock.release()
         server_client.unregister_agent(agent_name)
     rospy.on_shutdown(stop_agent)
     rospy.spin()
