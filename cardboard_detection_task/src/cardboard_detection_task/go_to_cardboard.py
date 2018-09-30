@@ -136,8 +136,13 @@ def main(stop_event, args):
     feedback_pub.publish('State Machine Finished!')
     if not preempted:
         formatted_vals = {
-        'waypoint_1': {'cardboard': sm.userdata.cardboard_1[0], 'no_cardboard': sm.userdata.cardboard_1[0]},
-        'waypoint_2': {'cardboard': sm.userdata.cardboard_2[0], 'no_cardboard': sm.userdata.cardboard_2[0]}
+        'waypoint_1': {
+            'cardboard': sm.userdata.cardboard_1[0],
+            'no_cardboard': sm.userdata.cardboard_1[0]
+        },
+        'waypoint_2': {
+            'cardboard': sm.userdata.cardboard_2[0],
+            'no_cardboard': sm.userdata.cardboard_2[0]}
         }
 #    else if sm.userdata.cardboard_2[0] is not None:
 #        formatted_vals = {

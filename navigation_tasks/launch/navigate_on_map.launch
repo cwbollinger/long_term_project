@@ -1,0 +1,4 @@
+<!-- Launches navigation stack for the indicated static map -->
+<launch>
+    <include file="$(find navigation_tasks)/launch/bringup_navigation.launch" />
+</launch>
