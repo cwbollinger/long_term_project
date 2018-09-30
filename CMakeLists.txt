@@ -11,7 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
 	roscpp
 	rospy
 	std_msgs
-        actionlib_msgs
+    actionlib_msgs
 	message_generation
 )
 
@@ -52,6 +52,8 @@ catkin_python_setup()
 add_message_files(
   FILES
   AgentDescription.msg
+  AgentStatus.msg
+  Task.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -62,7 +64,8 @@ add_service_files(
   GetRegisteredAgents.srv
   QueueTask.srv
   QueueTaskList.srv
-  ActiveTaskList.srv
+  AgentStatusList.srv
+  RequestMap.srv
 )
 
 ## Generate actions in the 'action' folder

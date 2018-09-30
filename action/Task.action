@@ -1,8 +1,5 @@
 #goal
-string workspace_name
-string package_name
-string launchfile_name
-string[] args
+long_term_deployment/Task task
 ----
 #result
 string success_msg

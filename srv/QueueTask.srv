@@ -1,6 +1,4 @@
-string workspace_name
-string package_name
-string launchfile_name
-string[] args
+long_term_deployment/Task task
+long_term_deployment/AgentDescription agent
 ---
 bool success

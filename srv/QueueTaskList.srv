@@ -1,2 +1,2 @@
 ---
-std_msgs/String[] tasks
+long_term_deployment/Task[] tasks
