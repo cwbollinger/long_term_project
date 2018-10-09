@@ -2,7 +2,7 @@
   <node pkg="rosbridge_server" name="rosbridge" type="rosbridge_websocket.py">
     <param name="unregister_timeout" value = "10.0"/>
   </node>
-  <node pkg="long_term_deployment" type="task_server.py" name="task_server" output="screen"/>
+  <node pkg="long_term_deployment" type="task_server.py" name="task_server" output="screen" required="true"/>
 
   <node pkg="long_term_deployment" type="map_manager.py" name="map_manager" output="screen"/>
   <!--

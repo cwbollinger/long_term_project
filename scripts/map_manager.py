@@ -5,8 +5,7 @@ import os.path as path
 import subprocess
 
 import rospy
-from long_term_deployment.srv import RequestMap
-
+from long_term_deployment.srv import RequestMap, RequestMapResponse
 
 class MapManager:
 
@@ -22,16 +21,38 @@ class MapManager:
         if p.poll() is None: # Map Server is still running
             p.kill() # close it
 
-        return True
+        del self.served_maps[req.map_name]
+
+        return RequestMapResponse()
 
     def serve_map(self, req):
+        if req.map_name in self.served_maps: # we are already serving this map
+            return RequestMapResponse()
+
+        # this is how you run a node using rosrun in a different namespace
         d = dict(os.environ)
         d["ROS_NAMESPACE"] = 'maps/{}'.format(req.map_name)
-        map_file = path.join(self.mapdir, '{}.yaml'.format(req.map_name))
-        cmdlist = ['rosrun', 'map_server', 'map_server', map_file]
-        self.served_maps[req.map_name] = subprocess.Popen(cmdlist)
 
-        return True
+        # build path to map file, maps must be in long_term_server/map directory
+        map_file = path.join(self.mapdir, '{}.yaml'.format(req.map_name))
+        rospy.loginfo(map_file)
+
+        # run as a subprocess
+        cmdlist = ['rosrun', 'map_server', 'map_server', map_file]
+        self.served_maps[req.map_name] = subprocess.Popen(cmdlist, env=d)
+
+        return RequestMapResponse()
+
+    def save_map(self, req):
+        d = dict(os.environ)
+        d["ROS_NAMESPACE"] = 'map_manager'
+        map_file = path.join(self.mapdir, req.map_name)
+        cmdlist = ['rosrun', 'map_server', 'map_saver', '-f {}'.format(map_file), 'map:=newmap/{}'.format(map_name)]
+        p = subprocess.Popen(cmdlist, env=d)
+        while p.poll() is None:
+            pass
+
+        return RequestMapResponse()
 
     def main(self):
         r = rospy.Rate(10)

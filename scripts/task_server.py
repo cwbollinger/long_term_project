@@ -33,9 +33,10 @@ class LongTermAgentServer(object):
         self.s2 = rospy.Service('~unregister_agent', UnregisterAgent, self.handle_unregister_agent)
         self.s3 = rospy.Service('~get_agents', GetRegisteredAgents, self.handle_get_agents)
         self.s4 = rospy.Service('~queue_task', QueueTask, self.queue_task)
-        self.s4 = rospy.Service('~start_continuous_task', QueueTask, self.start_continuous_task)
-        self.s5 = rospy.Service('~get_queued_tasks', QueueTaskList, self.get_queued_tasks)
-        self.s6 = rospy.Service('~get_agents_status', AgentStatusList, self.get_agents_status)
+        self.s5 = rospy.Service('~start_continuous_task', QueueTask, self.start_continuous_task)
+        self.s6 = rospy.Service('~stop_continuous_task', QueueTask, self.stop_continuous_task)
+        self.s7 = rospy.Service('~get_queued_tasks', QueueTaskList, self.get_queued_tasks)
+        self.s8 = rospy.Service('~get_agents_status', AgentStatusList, self.get_agents_status)
 
     def main(self):
         rate = rospy.Rate(1)
@@ -48,7 +49,7 @@ class LongTermAgentServer(object):
     def handle_register_agent(self, req):
         if req.description not in self.agents:
             print('registering agent: {}'.format(req.description.agent_name))
-            c = Client(req.description.agent_name, req.description.agent_type, None, None, None, [], rospy.get_time())
+            c = Client(req.description.agent_name, req.description.agent_type, None, None, None, {}, rospy.get_time())
             self.agents.append(c)
             return RegisterAgentResponse(True, req.description.agent_name)
         return RegisterAgentResponse(False, "")
@@ -75,12 +76,26 @@ class LongTermAgentServer(object):
     def start_continuous_task(self, req):
         agent = next((a for a in self.agents if a.name == req.agent.agent_name), None)
         if agent is not None:
-            agent.background_tasks.append(req.task)
             agent.last_ping_time = rospy.get_time()
-            agent.background_action_client.send_goal(TaskGoal(req.task), feedback_cb=self.cb_creator(agent))
+            agent.background_tasks[str(req.task)] = (req.task, agent.background_action_client.send_goal(TaskGoal(req.task), feedback_cb=self.cb_creator(agent)))
             return QueueTaskResponse(True)
         else: 
             return QueueTaskResponse(False)
+
+    def stop_continuous_task(self, req):
+        agent = next((a for a in self.agents if a.name == req.agent.agent_name), None)
+
+        if agent is None:
+            return QueueTaskResponse(False)
+
+        task_key = str(req.task)
+        if task_key not in agent.background_tasks:
+            return QueueTaskResponse(False)
+
+        gh = agent.background_tasks[task_key][1]
+        gh.cancel()
+
+        return QueueTaskResponse(True)
 
     def queue_task(self, req):
         self.task_queue.append(req.task)
@@ -96,7 +111,7 @@ class LongTermAgentServer(object):
             status = AgentStatus()
             status.agent = AgentDescription(a.name, a.robot_type)
             status.active_task = a.active_task if a.active_task != None else Task()
-            status.background_tasks = a.background_tasks
+            status.background_tasks = [t[0] for key, t in a.background_tasks.iteritems()]
             agents.append(status)
         return AgentStatusListResponse(agents)
 
@@ -158,6 +173,28 @@ class LongTermAgentServer(object):
                     result = agent.active_action_client.get_result()
                     print('Result Returned:')
                     print(base64.b64decode(result.success_msg))
+
+            if len(agent.background_tasks) > 0:
+                print(agent.name) 
+
+            terminal_tasks = []
+            for task_key, task in agent.background_tasks.iteritems():
+                gh = task[1]
+                status = gh.get_goal_status()
+                status_str = None
+                if status in self.TERMINAL_STATES:
+                    status_str = 'TERMINATED: {}'.format(gh.get_goal_status_text())
+                    terminal_tasks.append(task_key)
+                elif status == 1:
+                    status_str = 'ACTIVE'
+                elif status == 6:
+                    status_str = 'PREEMPTING'
+                else:
+                    status_str = 'Something else? {}'.format(status)
+                print("\t{}: {}".format(task[0].launchfile_name, status_str))
+
+            for task in terminal_tasks:
+                del agent.background_tasks[task]
 
 
 if __name__ == "__main__":

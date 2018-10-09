@@ -57,20 +57,24 @@ def draw_menu(stdscr):
 
         if num == 0:
             queue_active_task_proxy(Task('','long_term_deployment','test_task', ['5']), AgentDescription('turtlebot', 'turtlebot'))
-
-            num = None
         elif num == 1:
             queue_active_task_proxy(Task('','cardboard_detection_task','cardboard_capture', ['1']))
-            num = None
         elif num == 2:
             queue_active_task_proxy(Task('','cardboard_detection_task','cardboard_capture', ['2']))
-            num = None
         elif num == 3:
             start_continuous_task_proxy(Task('','navigation_tasks','navigate_on_map', ['maze']), AgentDescription('turtlebot', 'turtlebot'))
-            num = None
         elif num == 4:
-            queue_active_task_proxy(Task('','cardboard_detection_task','go_to_cardboard', []))
-            num = None
+            stop_continuous_task_proxy(Task('','navigation_tasks','navigate_on_map', ['maze']), AgentDescription('turtlebot', 'turtlebot'))
+        elif num == 5:
+            start_continuous_task_proxy(Task('','navigation_tasks','build_new_map', ['new_maze']), AgentDescription('turtlebot', 'turtlebot'))
+        elif num == 6:
+            stop_continuous_task_proxy(Task('','navigation_tasks','build_new_map', ['new_maze']), AgentDescription('turtlebot', 'turtlebot'))
+        elif num == 7:
+            start_continuous_task_proxy(Task('','navigation_tasks','explore_map', []), AgentDescription('turtlebot', 'turtlebot'))
+        elif num == 8:
+            stop_continuous_task_proxy(Task('','navigation_tasks','explore_map', []), AgentDescription('turtlebot', 'turtlebot'))
+
+        num = None
 
         # Declaration of strings
         statusbarstr = "Press 'q' to exit | STATUS BAR"
@@ -81,7 +85,12 @@ def draw_menu(stdscr):
         stdscr.addstr(int(height//2)+2, 0, 'Press "1" to queue "cardboard_capture_1"')
         stdscr.addstr(int(height//2)+3, 0, 'Press "2" to queue "cardboard_capture_2"')
         stdscr.addstr(int(height//2)+4, 0, 'Press "3" to start navigation on turtlebot agent')
-        stdscr.addstr(int(height//2)+5, 0, 'Press "4" to queue "go_to_cardboard"')
+        stdscr.addstr(int(height//2)+5, 0, 'Press "4" to stop navigation on turtlebot agent')
+        stdscr.addstr(int(height//2)+6, 0, 'Press "5" to start building a map on turtlebot agent')
+        stdscr.addstr(int(height//2)+7, 0, 'Press "6" to stop building a map on turtlebot agent')
+        stdscr.addstr(int(height//2)+8, 0, 'Press "7" to start frontier exploration on turtlebot agent')
+        stdscr.addstr(int(height//2)+9, 0, 'Press "8" to stop frontier exploration on turtlebot agent')
+        #stdscr.addstr(int(height//2)+5, 0, 'Press "4" to queue "go_to_cardboard"')
         for i in range(1, int(height//2)):
             stdscr.addstr(i, 15, '|')
             stdscr.addstr(i, 39, '|')
@@ -136,6 +145,8 @@ if __name__ == "__main__":
     queue_active_task_proxy = rospy.ServiceProxy('/task_server/queue_task', QueueTask)
     rospy.wait_for_service('/task_server/start_continuous_task')
     start_continuous_task_proxy = rospy.ServiceProxy('/task_server/start_continuous_task', QueueTask)
+    rospy.wait_for_service('/task_server/stop_continuous_task')
+    stop_continuous_task_proxy = rospy.ServiceProxy('/task_server/stop_continuous_task', QueueTask)
 
     main()
 
