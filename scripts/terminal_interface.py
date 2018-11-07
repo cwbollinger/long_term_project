@@ -56,23 +56,23 @@ def draw_menu(stdscr):
             }
 
         if num == 0:
-            queue_active_task_proxy(Task('','long_term_deployment','test_task', ['5']), AgentDescription('turtlebot', 'turtlebot'))
+            queue_active_task_proxy(Task('','long_term_deployment','test_task', ['5'], False), AgentDescription('turtlebot', 'turtlebot'))
         elif num == 1:
             queue_active_task_proxy(Task('','cardboard_detection_task','cardboard_capture', ['1']))
         elif num == 2:
             queue_active_task_proxy(Task('','cardboard_detection_task','cardboard_capture', ['2']))
         elif num == 3:
-            start_continuous_task_proxy(Task('','navigation_tasks','navigate_on_map', ['maze']), AgentDescription('turtlebot', 'turtlebot'))
+            start_continuous_task_proxy(Task('','navigation_tasks','navigate_on_map', ['maze'], True), AgentDescription('turtlebot', 'turtlebot'))
         elif num == 4:
-            stop_continuous_task_proxy(Task('','navigation_tasks','navigate_on_map', ['maze']), AgentDescription('turtlebot', 'turtlebot'))
+            stop_continuous_task_proxy(Task('','navigation_tasks','navigate_on_map', ['maze'], False), AgentDescription('turtlebot', 'turtlebot'))
         elif num == 5:
-            start_continuous_task_proxy(Task('','navigation_tasks','build_new_map', ['new_maze']), AgentDescription('turtlebot', 'turtlebot'))
+            start_continuous_task_proxy(Task('','navigation_tasks','build_new_map', ['new_maze'], False), AgentDescription('turtlebot', 'turtlebot'))
         elif num == 6:
-            stop_continuous_task_proxy(Task('','navigation_tasks','build_new_map', ['new_maze']), AgentDescription('turtlebot', 'turtlebot'))
+            stop_continuous_task_proxy(Task('','navigation_tasks','build_new_map', ['new_maze'], False), AgentDescription('turtlebot', 'turtlebot'))
         elif num == 7:
-            start_continuous_task_proxy(Task('','navigation_tasks','explore_map', []), AgentDescription('turtlebot', 'turtlebot'))
+            start_continuous_task_proxy(Task('','navigation_tasks','explore_map', [], True), AgentDescription('turtlebot', 'turtlebot'))
         elif num == 8:
-            stop_continuous_task_proxy(Task('','navigation_tasks','explore_map', []), AgentDescription('turtlebot', 'turtlebot'))
+            stop_continuous_task_proxy(Task('','navigation_tasks','explore_map', [], False), AgentDescription('turtlebot', 'turtlebot'))
 
         num = None
 
