@@ -2,6 +2,7 @@
 
 import sys
 import os
+import signal
 import subprocess
 import importlib
 import base64
@@ -92,8 +93,13 @@ class TaskActionServer(object):
             task_thread.start()
 
     def stop_continuous_task(self, gh):
+        goal_id = gh.get_goal_id()
         with self.continuous_lock:
-            self.continuous_tasks[gh.get_goal_id()] = True
+            if goal_id in self.continuous_tasks:
+                self.continuous_tasks[goal_id] = True
+            else:
+                warnmsg = 'Task {} doesn\'t seem to be running?'
+                rospy.logwarn(warnmsg.format(goal_id))
 
     def continuous_task_entry(self, gh):
         success = True
@@ -112,25 +118,31 @@ class TaskActionServer(object):
         #print('{}/devel/env.sh'.format(workspace_name))
         cmdlist = [os.path.expanduser('{}/devel/env.sh').format(workspace_name), 'roslaunch', t.package_name, "{}.launch".format(t.launchfile_name)]
         print(cmdlist)
-        p = subprocess.Popen(cmdlist)
-        print('checkpoint')
+
+        if t.debug:
+            devnull = None
+        else:
+            devnull = open(os.devnull, 'w')
+
+        p = subprocess.Popen(cmdlist, stdout=devnull, stderr=devnull)
 
         r = rospy.Rate(10)
+        feedback.status = "Starting Continuous Task..."
+        stopEvent = threading.Event()
+        queue = Queue.Queue()
+
         success = True
         has_script = True # we assume there's an active part of the "task"
+
         try:
-            print("{}.{}".format(t.package_name, t.launchfile_name))
+            #print("{}.{}".format(t.package_name, t.launchfile_name))
             task = importlib.import_module("{}.{}".format(t.package_name, t.launchfile_name))
-            print(dir(task))
+            #print(dir(task))
             func = getattr(task, 'main')
 
             def t_main(s, q): # make the main() in each task less nasty
                 q.put(func(stopEvent, goal.task.args))
                 return q
-
-            feedback.status = "Starting Continuous Task..."
-            stopEvent = threading.Event()
-            queue = Queue.Queue()
 
             task_thread = threading.Thread(target = t_main, args = (stopEvent, queue))
             task_thread.start()
@@ -145,28 +157,53 @@ class TaskActionServer(object):
                         success = False
                         break
                 r.sleep()
-        except ImportError: # Continuous tasks may not have a script component
-            print('no task script found')
+        except ImportError as e: # Continuous tasks may not have a script component
+            rospy.logdebug('task script not loaded because:')
+            rospy.logdebug(e)
             has_script = False
             while not rospy.is_shutdown():
                 with self.continuous_lock:
                     if self.continuous_tasks[gh.get_goal_id()]:
-                        rospy.loginfo('%s: Continuous Task Shutdown Requested' % self._action_name)
+                        rospy.loginfo('{}: Continuous Task Shutdown Requested'.format(self._action_name))
                         stopEvent.set() # end main, we're done
+                        break
+                    if p.poll() is not None: # launchfile has exited
                         break
 
         if p.poll() is None: # launchfile hasn't closed yet
-            p.kill() # close it
+            rospy.logdebug('shutting down launch file')
+            p.send_signal(signal.SIGINT) # some processes need this
+            for i in range(10): # give it 10 seconds to close cleanly
+                if p.poll() is None:
+                    rospy.sleep(1)
+                else:
+                    break
 
-        if success and has_script: # what should non-script launchfiles return on success?
-            result = base64.b64encode(str(queue.get())) # needed so json serialization works
-            result = TaskFeedback(success_msg=result) # get result from main, since it finished
+        if p.poll() is None: # launchfile STILL hasn't closed yet
+            rospy.logwarn('shutting down launch file, KILL required')
+            p.kill() # for real this time
+
+        if devnull:
+            devnull.close() # Don't need this pipe redirect since process is kill
+
+        if success and has_script: # TODO: what should non-script launchfiles return on success?
+            result = str(queue.get())
+            result = TaskFeedback(success_msg=result) # get main result, since it finished
 
             logmsg = '{}: Continuous Task {} Succeeded'
             rospy.loginfo(logmsg.format(self._action_name, goal.task.launchfile_name))
             rospy.loginfo('Result: {}'.format(result))
             rospy.loginfo('Queue len: {}'.format(queue.qsize()))
-            self._as_continuous.publish_result(result)
+            gh.set_succeeded(result=base64.b64encode(result), text='task success!')
+
+        elif success and not has_script:
+            gh.set_succeeded(text='launchfile exited normally')
+
+        elif not success and has_script:
+            gh.set_canceled(text='preemption requested')
+
+        else:
+            gh.set_aborted(text='task failure')
 
     def execute_cb(self, goal):
         t = goal.task
@@ -179,10 +216,19 @@ class TaskActionServer(object):
         print(goal.task.package_name, goal.task.launchfile_name)
         cmdlist = [os.path.expanduser('{}/devel/env.sh').format(workspace_name), 'roslaunch', t.package_name, "{}.launch".format(t.launchfile_name)]
 
-        p = subprocess.Popen(cmdlist)
+        r = rospy.Rate(10)
+        stopEvent = threading.Event()
+        queue = Queue.Queue()
+
+        if t.debug:
+            devnull = None
+        else:
+            devnull = open(os.devnull, 'w')
+
+        p = subprocess.Popen(cmdlist, stdout=devnull, stderr=devnull)
 
         task_script = importlib.import_module("{}.{}".format(t.package_name, t.launchfile_name))
-        #print(dir(task))
+
         func = getattr(task_script, 'main')
 
         def t_main(s, q): # make the main() in each task less nasty
@@ -191,9 +237,6 @@ class TaskActionServer(object):
 
         self._feedback.status = "Starting..."
         success = True
-        r = rospy.Rate(10)
-        stopEvent = threading.Event()
-        queue = Queue.Queue()
 
         task_thread = threading.Thread(target = t_main, args = (stopEvent, queue))
         task_thread.start()
@@ -204,13 +247,16 @@ class TaskActionServer(object):
             if self._as.is_preempt_requested():
                 rospy.loginfo('%s: Preempted' % self._action_name)
                 self._as.set_preempted()
-                stopEvent.set() # end main, we're done
+                stopEvent.set() # trigger end of task main(), we're done
                 success = False
                 break
             r.sleep()
 
         if p.poll() is None: # launchfile hasn't closed yet
             p.kill() # close it
+
+        if devnull:
+            devnull.close()
 
         if success:
             result = str(queue.get()) # get result from main, since it finished
@@ -234,5 +280,6 @@ if __name__ == "__main__":
             task_interface.continuous_tasks[task] = True
         task_interface.continuous_lock.release()
         server_client.unregister_agent(agent_name)
+
     rospy.on_shutdown(stop_agent)
     rospy.spin()
