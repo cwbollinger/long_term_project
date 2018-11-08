@@ -4,7 +4,7 @@
   <arg name="initial_pose_a" default="0.0"/>
 
   <!--  ************** Navigation  ***************  -->
-  <include file="$(find turtlebot_navigation)/launch/includes/move_base.launch.xml"/>
+  <include file="$(find navigation_tasks)/launch/includes/move_base.launch.xml"/>
 
   <include file="$(find turtlebot_navigation)/launch/includes/amcl/amcl.launch.xml">
     <arg name="scan_topic" value="scan"/>

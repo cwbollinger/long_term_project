@@ -1,0 +1,6 @@
+<launch>
+    <group ns="mapping">
+        <include file="$(find navigation_tasks)/launch/includes/gmapping/kinect_gmapping.launch.xml"/>
+        <node name="tf_bridge" pkg="navigation_tasks" type="tf_bridge.py"/>
+    </group>
+</launch>
