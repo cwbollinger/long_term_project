@@ -3,6 +3,7 @@
 import os
 import os.path as path
 import subprocess
+from datetime import datetime
 
 import rospy
 from long_term_deployment.srv import RequestMap, RequestMapResponse
@@ -14,6 +15,7 @@ class MapManager:
         self.served_maps = {}
         self.serve_map_service = rospy.Service('~serve_map', RequestMap, self.serve_map)
         self.end_serve_map_service = rospy.Service('~end_serve_map', RequestMap, self.end_serve_map)
+        self.save_map_service = rospy.Service('~save_map', RequestMap, self.save_map)
 
     def end_serve_map(self, req):
         p = self.served_maps[req.map_name]
@@ -46,10 +48,12 @@ class MapManager:
     def save_map(self, req):
         d = dict(os.environ)
         d["ROS_NAMESPACE"] = 'map_manager'
-        map_file = path.join(self.mapdir, req.map_name)
-        cmdlist = ['rosrun', 'map_server', 'map_saver', '-f {}'.format(map_file), 'map:=newmap/{}'.format(map_name)]
+        t = rospy.Time().now().to_time()
+        map_name = '{}_{}'.format(req.map_name, datetime.fromtimestamp(t))
+        map_file = path.join(self.mapdir, map_name)
+        cmdlist = ['rosrun', 'map_server', 'map_saver', '-f {}'.format(map_file), 'map:=newmap/{}'.format(req.map_name)]
         p = subprocess.Popen(cmdlist, env=d)
-        r = rospy.Rate(10):
+        r = rospy.Rate(10)
         while p.poll() is None:
             r.sleep()
 
