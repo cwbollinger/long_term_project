@@ -1,0 +1,5 @@
+<launch>
+  <!-- <node pkg="tf" type="static_transform_publisher" name="new_map_tf_pub" args="0 0 0 0 0 0 map new_map 100"/> -->
+  <node pkg="navigation_tasks" type="map_aligner.py" name="map_aligner" output="screen"/>
+  <node pkg="rviz" type="rviz" name="rviz"/>
+</launch>

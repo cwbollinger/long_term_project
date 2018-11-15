@@ -13,7 +13,7 @@ from long_term_deployment.srv import RequestMap
 def main(stop_event, args):
     ''' Takes a threading.Event to know if preemption is needed '''
     map_name = args[0]
-    rospy.loginfo(map_name)
+    rospy.loginfo('Saving map : "{}"'.format(map_name))
 
     expose_service = rospy.ServiceProxy('/rosduct/expose_remote_service', ROSDuctConnection)
     expose_topic = rospy.ServiceProxy('/rosduct/expose_local_topic', ROSDuctConnection)
