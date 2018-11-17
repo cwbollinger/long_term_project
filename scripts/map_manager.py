@@ -51,7 +51,7 @@ class MapManager:
         t = rospy.Time().now().to_time()
         map_name = '{}_{}'.format(req.map_name, datetime.fromtimestamp(t))
         map_file = path.join(self.mapdir, map_name)
-        cmdlist = ['rosrun', 'map_server', 'map_saver', '-f {}'.format(map_file), 'map:=newmap/{}'.format(req.map_name)]
+        cmdlist = ['rosrun', 'map_server', 'map_saver', '-f', '{}'.format(map_file), 'map:=newmap/{}'.format(req.map_name)]
         p = subprocess.Popen(cmdlist, env=d)
         r = rospy.Rate(10)
         while p.poll() is None:
