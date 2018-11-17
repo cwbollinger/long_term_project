@@ -1,6 +1,11 @@
 <launch>
-    <group ns="mapping">
-        <include file="$(find navigation_tasks)/launch/includes/gmapping/kinect_gmapping.launch.xml"/>
-        <node name="tf_bridge" pkg="navigation_tasks" type="tf_bridge.py"/>
-    </group>
+  <node name="tf_bridge" pkg="navigation_tasks" type="tf_bridge.py"/>
+  <node pkg="slam_karto" type="slam_karto" name="slam_karto" output="screen">
+    <remap from="scan" to="/scan"/>
+    <remap from="/tf" to="/mapping/tf"/>
+    <param name="map_frame" value="new_map"/>
+    <param name="odom_frame" value="odom"/>
+    <param name="map_update_interval" value="25"/>
+    <param name="resolution" value="0.025"/>
+  </node>
 </launch>
