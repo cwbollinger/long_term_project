@@ -1,0 +1,41 @@
+<launch>
+  <node pkg="rosduct" name="rosduct" type="rosduct_main.py" output="screen" respawn="true">
+    <rosparam>
+    # ROSbridge websocket server info
+    rosbridge_ip: localhost
+    rosbridge_port: 9090
+    # Topics being published remotely to expose locally
+    remote_topics: [
+                        ['/erratic_agent/active/goal', 'long_term_deployment/TaskActionGoal', '/robot_client/active/goal'],
+                        ['/erratic_agent/active/cancel', 'actionlib_msgs/GoalID', '/robot_client/active/cancel'],
+                        ['/erratic_agent/continuous/goal', 'long_term_deployment/TaskActionGoal', '/robot_client/continuous/goal'],
+                        ['/erratic_agent/continuous/cancel', 'actionlib_msgs/GoalID', '/robot_client/continuous/cancel']
+                   ]
+    # Topics being published in the local roscore to expose remotely
+    local_topics: [
+                        ['/robot_client/active/result', 'long_term_deployment/TaskActionResult', '/erratic_agent/active/result'],
+                        ['/robot_client/active/feedback', 'long_term_deployment/TaskActionFeedback', '/erratic_agent/active/feedback'],
+                        ['/robot_client/active/status', 'actionlib_msgs/GoalStatusArray', '/erratic_agent/active/status'],
+                        ['/robot_client/continuous/result', 'long_term_deployment/TaskActionResult', '/erratic_agent/continuous/result'],
+                        ['/robot_client/continuous/feedback', 'long_term_deployment/TaskActionFeedback', '/erratic_agent/continuous/feedback'],
+                        ['/robot_client/continuous/status', 'actionlib_msgs/GoalStatusArray', '/erratic_agent/continuous/status']
+                  ]
+    # Services running remotely to expose locally
+    remote_services: [
+                        ['/task_server/register_agent', 'long_term_deployment/RegisterAgent'],
+                        ['/task_server/unregister_agent', 'long_term_deployment/UnregisterAgent'],
+                        ['/task_server/get_agents', 'long_term_deployment/GetRegisteredAgents']
+                     ]
+    # Services running locally to expose remotely
+    local_services: [
+                    ]
+    # Parameters to be sync, they will be polled to stay in sync
+    #parameters: []
+    #parameter_polling_hz: 1
+
+    </rosparam>
+  </node>
+  <node pkg="long_term_deployment" name="robot_client" type="client.py" output="screen">
+    <param name="agent_name" value="erratic"/>
+  </node>
+</launch>

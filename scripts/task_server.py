@@ -43,7 +43,7 @@ class LongTermAgentServer(object):
         while not rospy.is_shutdown():
             self.schedule_tasks()
             self.check_task_status()
-            self.clear_dcd_agents()
+            self.clear_disconnected_agents()
             rate.sleep()
 
     def handle_register_agent(self, req):
@@ -98,8 +98,25 @@ class LongTermAgentServer(object):
         return QueueTaskResponse(True)
 
     def queue_task(self, req):
-        self.task_queue.append(req.task)
-        print('task queued...')
+        # tasks can optionally specify a specific agent to assign to
+        names = [a.name for a in self.agents]
+        if req.agent.agent_name in names:
+            agent = self.agents[names.index(req.agent.agent_name)]
+            if agent.active_action_client == None:
+                print('agent {} not initialized yet, cannot assign task...'.format(agent.name))
+                return QueueTaskResponse(False)
+            status = agent.active_action_client.get_state()
+            if status not in self.TERMINAL_STATES:
+                print('agent {} not available, currently busy'.format(agent.name))
+                #print('will wait until goal is complete...')
+            else:
+                agent.active_task = req.task
+                agent.last_ping_time = rospy.get_time()
+                agent.active_action_client.send_goal(TaskGoal(agent.active_task), feedback_cb=self.cb_creator(agent))
+                print('Goal Sent!')
+        else:
+            self.task_queue.append(req.task)
+            print('task queued...')
         return QueueTaskResponse(True)
 
     def get_queued_tasks(self, req):
@@ -138,7 +155,7 @@ class LongTermAgentServer(object):
             agent.last_ping_time = rospy.get_time()
         return cb
 
-    def clear_dcd_agents(self):
+    def clear_disconnected_agents(self):
         t = rospy.get_time()
 
         for i, agent in enumerate(self.agents):
