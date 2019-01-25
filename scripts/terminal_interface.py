@@ -73,6 +73,8 @@ def draw_menu(stdscr):
             start_continuous_task_proxy(Task('','navigation_tasks','explore_map', [], True), AgentDescription('turtlebot', 'turtlebot'))
         elif num == 8:
             stop_continuous_task_proxy(Task('','navigation_tasks','explore_map', [], False), AgentDescription('turtlebot', 'turtlebot'))
+        elif num == 9:
+            queue_active_task_proxy(Task('','navigation_tasks','go_to_pose', ['5.0', '5.0', '0.0'], False), AgentDescription('turtlebot', 'turtlebot'))
 
         num = None
 
@@ -90,7 +92,8 @@ def draw_menu(stdscr):
         stdscr.addstr(int(height//2)+7, 0, 'Press "6" to stop building a map on turtlebot agent')
         stdscr.addstr(int(height//2)+8, 0, 'Press "7" to start frontier exploration on turtlebot agent')
         stdscr.addstr(int(height//2)+9, 0, 'Press "8" to stop frontier exploration on turtlebot agent')
-        #stdscr.addstr(int(height//2)+5, 0, 'Press "4" to queue "go_to_cardboard"')
+        stdscr.addstr(int(height//2)+10, 0, 'Press "9" to go to 5,5 on map')
+
         for i in range(1, int(height//2)):
             stdscr.addstr(i, 15, '|')
             stdscr.addstr(i, 39, '|')
