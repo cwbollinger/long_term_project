@@ -2,9 +2,12 @@
   <arg name="initial_pose_x" default="2.0"/>
   <arg name="initial_pose_y" default="2.0"/>
   <arg name="initial_pose_a" default="0.0"/>
+  <arg name="vel_topic" default="false"/> <!-- by default does not override move_base default config -->
 
   <!--  ************** Navigation  ***************  -->
-  <include file="$(find navigation_tasks)/launch/includes/move_base.launch.xml"/>
+  <include file="$(find navigation_tasks)/launch/includes/move_base.launch.xml">
+    <arg name="vel_topic" value="$(arg vel_topic)"/>
+  </include>
 
   <include file="$(find turtlebot_navigation)/launch/includes/amcl/amcl.launch.xml">
     <arg name="scan_topic" value="scan"/>

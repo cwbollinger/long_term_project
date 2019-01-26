@@ -1,4 +1,7 @@
 <!-- Launches navigation stack for the indicated static map -->
 <launch>
-    <include file="$(find navigation_tasks)/launch/bringup_navigation.launch" />
+    <arg name="vel_topic"/>
+    <include file="$(find navigation_tasks)/launch/bringup_navigation.launch">
+      <arg name="vel_topic" value="$(arg vel_topic)"/> <!-- by default does not override move_base default config -->
+    </include>
 </launch>
