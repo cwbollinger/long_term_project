@@ -63,6 +63,8 @@ class TaskActionServer(object):
     _result = TaskResult()
 
     def __init__(self):
+        self.client_params = rospy.get_param('/client_params')
+        print(self.client_params)
         print('Action Server Init')
         self.feedback_sub = rospy.Subscriber('~active_feedback', String, self.update_active_feedback)
         self._action_name = name
@@ -116,7 +118,8 @@ class TaskActionServer(object):
             workspace_name = '~/{}'.format(t.workspace_name)
 
         #print('{}/devel/env.sh'.format(workspace_name))
-        cmdlist = [os.path.expanduser('{}/devel/env.sh').format(workspace_name), 'roslaunch', t.package_name, "{}.launch".format(t.launchfile_name)]
+        launch_args = ['{}:={}'.format(k, v) for k, v in self.client_params.items()]
+        cmdlist = [os.path.expanduser('{}/devel/env.sh').format(workspace_name), 'roslaunch', t.package_name, "{}.launch".format(t.launchfile_name)] + launch_args
         print(cmdlist)
 
         if t.debug:
@@ -214,7 +217,9 @@ class TaskActionServer(object):
 
         # Startup dependencies
         print(goal.task.package_name, goal.task.launchfile_name)
-        cmdlist = [os.path.expanduser('{}/devel/env.sh').format(workspace_name), 'roslaunch', t.package_name, "{}.launch".format(t.launchfile_name)]
+        launch_args = ['{}:={}'.format(k, v) for k, v in self.client_params.items()]
+        cmdlist = [os.path.expanduser('{}/devel/env.sh').format(workspace_name), 'roslaunch', t.package_name, "{}.launch".format(t.launchfile_name)] + launch_args
+        print(cmdlist)
 
         r = rospy.Rate(10)
         stopEvent = threading.Event()
