@@ -72,7 +72,7 @@ class TaskActionServer(object):
         self._as.start()
 
         # Continous Task tracking/server
-        self.continuous_tasks = {}
+        self.running_continuous_tasks = {}
         self.continuous_lock = threading.RLock()
         self._as_continuous = actionlib.ActionServer("~continuous", TaskAction, self.start_continuous_task, self.stop_continuous_task, auto_start=False)
         self._as_continuous.start()
@@ -90,15 +90,17 @@ class TaskActionServer(object):
 
     def start_continuous_task(self, gh):
         with self.continuous_lock:
-            self.continuous_tasks[gh.get_goal_id()] = False
+            task = gh.get_goal().task
+            task_name = '{}/{}'.format(task.package_name, task.launchfile_name)
+            self.running_continuous_tasks[gh.get_goal_id()] = [task_name, True]
             task_thread = threading.Thread(target = self.continuous_task_entry, args = (gh,))
             task_thread.start()
 
     def stop_continuous_task(self, gh):
         goal_id = gh.get_goal_id()
         with self.continuous_lock:
-            if goal_id in self.continuous_tasks:
-                self.continuous_tasks[goal_id] = True
+            if goal_id in self.running_continuous_tasks:
+                self.running_continuous_tasks[goal_id][1] = False
             else:
                 warnmsg = 'Task {} doesn\'t seem to be running?'
                 rospy.logwarn(warnmsg.format(goal_id))
@@ -154,8 +156,10 @@ class TaskActionServer(object):
                 gh.publish_feedback(feedback)
                 # check that preempt has not been requested by the client
                 with self.continuous_lock:
-                    if self.continuous_tasks[gh.get_goal_id()]:
+                    goal_id = gh.get_goal_id()
+                    if not self.running_continuous_tasks[goal_id][1]:
                         rospy.loginfo('%s: Continuous Task Preempted' % self._action_name)
+                        del self.continous_tasks[goal_id]
                         stopEvent.set() # end main, we're done
                         success = False
                         break
@@ -166,7 +170,7 @@ class TaskActionServer(object):
             has_script = False
             while not rospy.is_shutdown():
                 with self.continuous_lock:
-                    if self.continuous_tasks[gh.get_goal_id()]:
+                    if not self.running_continuous_tasks[gh.get_goal_id()][1]:
                         rospy.loginfo('{}: Continuous Task Shutdown Requested'.format(self._action_name))
                         stopEvent.set() # end main, we're done
                         break
@@ -237,7 +241,11 @@ class TaskActionServer(object):
         func = getattr(task_script, 'main')
 
         def t_main(s, q): # make the main() in each task less nasty
-            q.put(func(stopEvent, t.args))
+            try:
+                q.put(func(stopEvent, t.args))
+            except: # If ANY exception fires, assume failure.
+                    # Task mains should catch non-critical exception internally
+                success = False
             #return q
 
         self._feedback.status = "Starting..."
@@ -276,15 +284,19 @@ if __name__ == "__main__":
     rospy.init_node('robot_client')
     name = rospy.get_param("~agent_name", "default")
     task_interface = TaskActionServer()
-    server_client = LongTermAgentClient()
-    agent_name = server_client.register_agent(name, name)
+    try:
+        server_client = LongTermAgentClient()
+        agent_name = server_client.register_agent(name, name)
 
-    def stop_agent():
-        task_interface.continuous_lock.acquire()
-        for task in task_interface.continuous_tasks:
-            task_interface.continuous_tasks[task] = True
-        task_interface.continuous_lock.release()
-        server_client.unregister_agent(agent_name)
+        def stop_agent():
+            task_interface.continuous_lock.acquire()
+            for task in task_interface.running_continuous_tasks:
+                task_interface.running_continuous_tasks[task][1] = False
+            task_interface.continuous_lock.release()
+            server_client.unregister_agent(agent_name)
 
-    rospy.on_shutdown(stop_agent)
-    rospy.spin()
+        rospy.on_shutdown(stop_agent)
+        rospy.spin()
+    except rospy.exceptions.ROSInterruptException as e:
+        rospy.logwarn(e)
+        exit()
