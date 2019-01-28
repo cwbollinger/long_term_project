@@ -12,6 +12,8 @@ from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from rosduct.srv import ROSDuctConnection
 from long_term_deployment.srv import RequestMap
 
+required_tasks = ['navigation_tasks/navigate_on_map']
+
 def main(stop_event, args):
     ''' Takes a threading.Event to know if preemption is needed '''
 
