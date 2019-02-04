@@ -1,4 +1,8 @@
 <launch>
+  <rosparam ns="client_params">
+    vel_topic: 'navigation_velocity_smoother/raw_cmd_vel'
+  </rosparam>
+
   <node pkg="rosduct" name="rosduct" type="rosduct_main.py" output="screen" respawn="true">
     <rosparam>
     # ROSbridge websocket server info

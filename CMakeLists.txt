@@ -66,6 +66,7 @@ add_service_files(
   QueueTaskList.srv
   AgentStatusList.srv
   RequestMap.srv
+  GetTaskFromID.srv
 )
 
 ## Generate actions in the 'action' folder
