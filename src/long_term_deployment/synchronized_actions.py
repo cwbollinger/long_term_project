@@ -24,7 +24,7 @@ def get_id_from_gh(gh):
     return gh.comm_state_machine.action_goal.goal_id.id
 
 
-class SychronizedActionClient(object):
+class SynchronizedActionClient(object):
 
     def __init__(self, action_namespace, action_spec):
         self.goals = []
@@ -112,7 +112,7 @@ class SynchronizedActionServer(object):
         self.goal_stop_fn(gh)
 
 
-class SychronizedSimpleActionClient(object):
+class SynchronizedSimpleActionClient(object):
 
     def __init__(self, action_namespace, action_spec):
         self.client = SimpleActionClient(action_namespace, action_spec)
@@ -175,7 +175,10 @@ class SychronizedSimpleActionClient(object):
 class SynchronizedSimpleActionServer(object):
 
     def __init__(self, namespace, action_spec, execute_cb):
-        self.goal_service = rospy.Service(namespace+'/get_goal_from_id', GetTaskFromID, task_id_cb)
+        self.goal_service = rospy.Service(
+            namespace + '/get_goal_from_id',
+            GetTaskFromID,
+            self.task_id_cb)
         self.server = SimpleActionServer(
             namespace,
             action_spec,
