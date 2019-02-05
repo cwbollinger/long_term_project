@@ -3,6 +3,20 @@
     vel_topic: '/cmd_vel'
   </rosparam>
 
+  <rosparam ns="client_capability">
+    navigation:
+        type: differential 
+        topic: '/cmd_vel'
+    sensors:
+        camera:
+            depth: true
+            topic: '/camera'
+        lidar:
+            height: 150  # mm
+            fov: 0.349   # radians
+            topic: '/scan'
+  </rosparam>
+
   <param name="robot_description" command="$(find xacro)/xacro '$(find erratic_description)/urdf/erratic.urdf.xacro'" />
   <include file="$(find erratic_player)/launch/erratic_base.launch"/>
   <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" output="screen">

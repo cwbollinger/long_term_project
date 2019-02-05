@@ -3,7 +3,7 @@ import weakref
 import actionlib
 from actionlib import ActionClient, ActionServer, CommStateMachine, SimpleActionClient, SimpleActionServer
 
-from actionlib_msgs.msg import GoalStatusArray
+from actionlib_msgs.msg import GoalStatus, GoalStatusArray
 
 from long_term_deployment.srv import GetTaskFromID, GetTaskFromIDResponse
 
@@ -21,7 +21,11 @@ def get_task_from_gh(gh):
 
 
 def get_id_from_gh(gh):
-    return gh.comm_state_machine.action_goal.goal_id.id
+    try:
+        goal_id = gh.comm_state_machine.action_goal.goal_id.id
+    except AttributeError:
+        goal_id = None
+    return goal_id
 
 
 class SynchronizedActionClient(object):
@@ -29,25 +33,26 @@ class SynchronizedActionClient(object):
     def __init__(self, action_namespace, action_spec):
         self.goals = []
         self.client = ActionClient(action_namespace, action_spec)
-        self.status_topic = rospy.remap_name(action_namespace)+'/status'
+        self.status_topic = rospy.remap_name(action_namespace) + '/status'
         self.status_sub = rospy.Subscriber(
-                self.status_topic,
-                GoalStatusArray,
-                self.add_missing_goals)
-        self.status_sub = rospy.Subscriber(
-                rospy.remap_name(action_namespace)+'/goal',
-                self.client.ActionGoal,
-                self.add_new_goal)
+            self.status_topic,
+            GoalStatusArray,
+            self.add_missing_goals)
+        # self.status_sub = rospy.Subscriber(
+        #     rospy.remap_name(action_namespace) + '/goal',
+        #     self.client.ActionGoal,
+        #     self.add_new_goal)
 
         self.client.wait_for_server()
-        rospy.wait_for_service(action_namespace+'/get_goal_from_id')
-        self.goal_from_id = rospy.ServiceProxy(action_namespace+'/get_goal_from_id', GetTaskFromID)
+        rospy.wait_for_service(action_namespace + '/get_goal_from_id')
+        self.goal_from_id = rospy.ServiceProxy(action_namespace + '/get_goal_from_id', GetTaskFromID)
 
     def send_goal(self, goal, transition_cb=None, feedback_cb=None):
         gh = self.client.send_goal(
-                goal,
-                transition_cb=transition_cb,
-                feedback_cb=feedback_cb)
+            goal,
+            transition_cb=transition_cb,
+            feedback_cb=feedback_cb)
+
         self.goals.append(gh)
 
     def get_gh_from_task(self, task):
@@ -88,7 +93,10 @@ class SynchronizedActionServer(object):
         self.goals = {}
         self.goal_start_fn = goal_start_fn
         self.goal_stop_fn = goal_stop_fn
-        self.goal_service = rospy.Service(namespace+'/get_goal_from_id', GetTaskFromID, task_id_cb)
+        self.goal_service = rospy.Service(
+            namespace + '/get_goal_from_id',
+            GetTaskFromID,
+            self.task_id_cb)
         self.server = ActionServer(
             namespace,
             action_spec,
@@ -116,28 +124,32 @@ class SynchronizedSimpleActionClient(object):
 
     def __init__(self, action_namespace, action_spec):
         self.client = SimpleActionClient(action_namespace, action_spec)
-        self.status_topic = rospy.remap_name(action_namespace)+'/status'
-        self.status_sub = rospy.Subscriber(
-                self.status_topic,
-                GoalStatusArray,
-                self.add_missing_goals)
-        self.status_sub = rospy.Subscriber(
-                rospy.remap_name(action_namespace)+'/goal',
-                self.client.ActionGoal,
-                self.add_new_goal)
+        self.status_topic = rospy.remap_name(action_namespace) + '/status'
+        # self.status_sub = rospy.Subscriber(
+        #     self.status_topic,
+        #     GoalStatusArray,
+        #     self.add_missing_goal)
+        # self.status_sub = rospy.Subscriber(
+        #     rospy.remap_name(action_namespace) + '/goal',
+        #     self.client.action_client.ActionGoal,
+        #     self.add_new_goal)
 
         self.client.wait_for_server()
-        rospy.wait_for_service(action_namespace+'/get_goal_from_id')
-        self.goal_from_id = rospy.ServiceProxy(action_namespace+'/get_goal_from_id', GetTaskFromID)
+        rospy.wait_for_service(action_namespace + '/get_goal_from_id')
+        self.goal_from_id = rospy.ServiceProxy(
+            action_namespace + '/get_goal_from_id',
+            GetTaskFromID)
 
     def send_goal(self, goal, done_cb=None, active_cb=None, feedback_cb=None):
         self.client.send_goal(
-                goal,
-                done_cb=done_cb,
-                active_cb=active_cb,
-                feedback_cb=feedback_cb)
+            goal,
+            done_cb=done_cb,
+            active_cb=active_cb,
+            feedback_cb=feedback_cb)
 
     def get_state(self):
+        if self.client.gh is None:
+            return GoalStatus.LOST
         return self.client.get_state()
 
     def get_result(self):
@@ -159,7 +171,7 @@ class SynchronizedSimpleActionClient(object):
         self.start_tracking_goal_id(msg.goal_id, msg.goal)
 
     def start_tracking_goal_id(self, goal_id, goal):
-        action_goal = self.client.manager.ActionGoal(
+        action_goal = self.client.action_client.manager.ActionGoal(
             header=Header(),
             goal_id=goal_id,
             goal=goal)
@@ -170,6 +182,9 @@ class SynchronizedSimpleActionClient(object):
         # simple action client only tracks one goal at a time
         self.client.stop_tracking_goal()
         self.client.gh = actionlib.ClientGoalHandle(csm)
+
+    def stop_tracking_goal(self):
+        self.client.stop_tracking_goal()
 
 
 class SynchronizedSimpleActionServer(object):
