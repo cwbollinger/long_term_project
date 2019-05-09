@@ -13,19 +13,32 @@ from std_msgs.msg import Header
 
 
 def get_task_from_gh(gh):
+    task = None
     try:
-        task = gh.comm_state_machine.action_goal.goal.task
-    except AttributeError:
-        task = None
+        if gh is not None:
+            task = gh.comm_state_machine.action_goal.goal.task
+    except AttributeError as e:
+        print('get_task_from_gh: {}'.format(e))
     return task
 
 
 def get_id_from_gh(gh):
     try:
         goal_id = gh.comm_state_machine.action_goal.goal_id.id
-    except AttributeError:
+    except AttributeError as e:
+        print('get_id_from_gh: {}'.format(e))
         goal_id = None
     return goal_id
+
+
+def null_task(task):
+    ws_name_empty = task.workspace_name == ''
+    pkg_name_empty = task.package_name == ''
+    lf_name_empty = task.launchfile_name == ''
+    if ws_name_empty and pkg_name_empty and lf_name_empty:
+        return True
+    else:
+        return False
 
 
 class SynchronizedActionClient(object):
@@ -64,9 +77,14 @@ class SynchronizedActionClient(object):
     def add_missing_goals(self, status_array):
         tracked_goal_ids = [get_id_from_gh(gh) for gh in self.goals]
         for goal_status in status_array.status_list:
-            if goal_status.goal_id.id not in tracked_goal_ids:
-                goal = self.goal_from_id(goal_status.goal_id.id)
-                self.start_tracking_goal_id(goal_status.goal_id, goal)
+            if goal_status.status not in [2, 3, 4, 5, 8]:
+                if goal_status.goal_id.id not in tracked_goal_ids:
+                    goal = self.goal_from_id(goal_status.goal_id.id).goal
+                    if not null_task(goal.task):
+                        self.start_tracking_goal_id(goal_status.goal_id, goal)
+                    else:
+                        msg = 'Null goal received, not tracking {} with status {}'
+                        rospy.logwarn(msg.format(goal_status.goal_id.id, goal_status))
 
     def add_new_goal(self, msg):
         self.start_tracking_goal_id(msg.goal_id, msg.goal)

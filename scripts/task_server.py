@@ -44,7 +44,6 @@ class LongTermAgentServer(object):
         GoalStatus.ABORTED,
         GoalStatus.SUCCEEDED
     ]
-
     def __init__(self):
         self.agents = []
         self.task_queue = []
@@ -113,7 +112,8 @@ class LongTermAgentServer(object):
         for gh in agent.background_action_client.goals:
             task = get_task_from_gh(gh)
             if task_key == str(task):
-                gh.set_canceled()
+                # print(dir(gh))
+                # gh.set_canceled()
                 gh.cancel()
                 return QueueTaskResponse(True)
 
@@ -155,8 +155,13 @@ class LongTermAgentServer(object):
             status.active_task = active_task if active_task is not None else Task()
             status.background_tasks = []
             if a.background_action_client is not None:
-                status.background_tasks = [get_task_from_gh(gh) for gh in
-                                           a.background_action_client.goals]
+                status.background_tasks = []
+                for gh in a.background_action_client.goals:
+                    task = get_task_from_gh(gh)
+                    if task is None:
+                        task = Task()
+                    status.background_tasks.append(task)
+
             agents.append(status)
         return AgentStatusListResponse(agents)
 
@@ -224,30 +229,27 @@ class LongTermAgentServer(object):
             if len(agent.background_action_client.goals) > 0:
                 print(agent.name)
 
-            terminal_tasks = []
             for idx, gh in enumerate(agent.background_action_client.goals):
+                task = get_task_from_gh(gh)
+                if(task is None):
+                    launchfile_name = 'Unknown? (gh={})'.format(gh)
+                else:
+                    launchfile_name = task.launchfile_name
                 status = gh.get_goal_status()
                 status_str = None
                 if status in self.TERMINAL_STATES:
                     status_str = 'TERMINATED: {}'.format(gh.get_goal_status_text())
-                    terminal_tasks.append(idx)
+                    del agent.background_action_client.goals[idx]
+                elif status == 0:
+                    status_str = 'PENDING'
                 elif status == 1:
                     status_str = 'ACTIVE'
                 elif status == 6:
                     status_str = 'PREEMPTING'
                 else:
-
                     status_str = 'Something else? {}'.format(status)
-                task = get_task_from_gh(gh)
-                if(task is None):
-                    launchfile_name = 'Unknown?'
-                else:
-                    launchfile_name = task.launchfile_name
 
                 print('\t{}: {}'.format(launchfile_name, status_str))
-
-            for idx in terminal_tasks:
-                del agent.background_action_client[idx]
 
 
 if __name__ == '__main__':
