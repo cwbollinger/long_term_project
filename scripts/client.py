@@ -10,6 +10,9 @@ import rospy
 from long_term_deployment.msg import AgentDescription, Task, TaskGoal, TaskFeedback, TaskResult, TaskAction
 from long_term_deployment.srv import RegisterAgent, UnregisterAgent, GetRegisteredAgents
 from long_term_deployment.synchronized_actions import SynchronizedActionClient, SynchronizedActionServer, SynchronizedSimpleActionServer
+
+from actionlib_msgs.msg import GoalStatus
+
 from std_msgs.msg import String
 import threading
 import Queue
@@ -84,7 +87,6 @@ class TaskActionServer(object):
             execute_cb=self.execute_cb)
 
         # Continous Task tracking/server
-        self.running_continuous_tasks = {}
         self.continuous_lock = threading.RLock()
         self._as_continuous = SynchronizedActionServer(
             "~continuous",
@@ -139,25 +141,29 @@ class TaskActionServer(object):
             os.path.expanduser('{}/devel/env.sh').format(workspace_name),
             'roslaunch',
             task.package_name,
-            "{}.launch".format(task.launchfile_name)] + launch_args
+            '{}.launch'.format(task.launchfile_name)] + launch_args
 
         devnull = None if task.debug else open(os.devnull, 'w')
         p = subprocess.Popen(cmdlist, stdout=devnull, stderr=devnull)
         return p, devnull
 
     def update_active_feedback(self, msg):
-        ''' update feedback message and immediately send it. '''
+        """ update feedback message and immediately send it."""
         self._feedback.status = msg.data
         self._as.publish_feedback(self._feedback)
 
-    def start_continuous_task(self, gh):
+    @staticmethod
+    def taskname_from_gh(gh):
         task = gh.get_goal().task
-        task_name = '{}/{}'.format(task.package_name, task.launchfile_name)
-        running_tasks = [x for x, _ in self.running_continuous_tasks.values()]
+        return (task.package_name, task.launchfile_name)
+
+    def start_continuous_task(self, gh):
+        task_name = self.taskname_from_gh(gh)
+        running_tasks = ['{}/{}'.format(*task_name)
+                         for gh in self._as_continuous.goals.values()]
         # get the list of required tasks from the script file
         try:
-            task_name = "{}.{}".format(task.package_name, task.launchfile_name)
-            task_script = importlib.import_module(task_name)
+            task_script = importlib.import_module('{}.{}'.format(*task_name))
             required_tasks = getattr(task_script, 'required_tasks')
         except ImportError:
             required_tasks = []
@@ -166,6 +172,8 @@ class TaskActionServer(object):
 
         for t in required_tasks:
             if t not in running_tasks:
+                print('{} not in running tasks'.format(t))
+                print('running tasks are: {}'.format(running_tasks))
                 package_name, launchfile_name = t.split('/')
                 dep_task = TaskGoal(
                     workspace_name='',
@@ -177,7 +185,6 @@ class TaskActionServer(object):
                 rospy.sleep(1)  # TODO: something better here...
 
         with self.continuous_lock:
-            self.running_continuous_tasks[gh.get_goal_id()] = [task_name, True]
             task_thread = threading.Thread(
                 target=self.continuous_task_entry,
                 args=(gh,))
@@ -186,16 +193,16 @@ class TaskActionServer(object):
     def stop_continuous_task(self, gh):
         goal_id = gh.get_goal_id()
         with self.continuous_lock:
-            if goal_id in self.running_continuous_tasks:
-                self.running_continuous_tasks[goal_id][1] = False
+            if goal_id.id in self._as_continuous.goals:
+                gh.set_cancel_requested()
             else:
                 warnmsg = "Task {} doesn't seem to be running?"
-                rospy.logwarn(warnmsg.format(goal_id))
+                rospy.logwarn(warnmsg.format(goal_id.id))
 
     def continuous_task_entry(self, gh):
         success = True
         print('Incoming Continuous Task...')
-        feedback = TaskFeedback(status="Continuous Task Ping")
+        feedback = TaskFeedback(status='Continuous Task Ping')
         gh.set_accepted()
         goal = gh.get_goal()
         gh.publish_feedback(feedback)
@@ -204,14 +211,14 @@ class TaskActionServer(object):
         p, devnull = self.start_task_launchfile(t)
 
         r = rospy.Rate(10)
-        feedback.status = "Starting Continuous Task..."
+        feedback.status = 'Starting Continuous Task...'
         stopEvent = threading.Event()
         queue = Queue.Queue()
 
         has_script = True
         try:
-            task_name = "{}.{}".format(t.package_name, t.launchfile_name)
-            task_script = importlib.import_module(task_name)
+            task_name = (t.package_name, t.launchfile_name)
+            task_script = importlib.import_module('{}.{}'.format(*task_name))
         # Continuous tasks may not have a script component
         except ImportError as e:
             rospy.logdebug('task script not loaded because:')
@@ -231,12 +238,11 @@ class TaskActionServer(object):
                 gh.publish_feedback(feedback)
                 # check that preempt has not been requested by the client
                 with self.continuous_lock:
-                    goal_id = gh.get_goal_id()
-                    if not self.running_continuous_tasks[goal_id][1]:
+                    if gh.get_goal_status().status == GoalStatus.PREEMPTING:
                         log_msg = '{}: Continuous Task Preempted'
                         rospy.loginfo(log_msg.format(self._action_name))
-                        del self.continous_tasks[goal_id]
                         stopEvent.set()  # end main, we're done
+                        del self._as_continuous.goals[gh.get_goal_id().id]
                         success = False
                         break
                 r.sleep()
@@ -244,7 +250,7 @@ class TaskActionServer(object):
         else:
             while not rospy.is_shutdown():
                 with self.continuous_lock:
-                    if not self.running_continuous_tasks[gh.get_goal_id()][1]:
+                    if gh.get_goal_status().status == GoalStatus.PREEMPTING:
                         log_msg = '{}: Continuous Task Shutdown Requested'
                         rospy.loginfo(log_msg.format(self._action_name))
                         break
@@ -306,12 +312,12 @@ class TaskActionServer(object):
 
         t = goal.task
 
-        task_name = '{}/{}'.format(t.package_name, t.launchfile_name)
-        running_tasks = [n for n, _ in self.running_continuous_tasks.values()]
+        task_name = (t.package_name, t.launchfile_name)
+        running_tasks = ['{}/{}'.format(*self.taskname_from_gh(gh))
+                         for gh in self._as_continuous.goals.values()]
         # get the list of required tasks from the script file
+        task_script = importlib.import_module('{}.{}'.format(*task_name))
         try:
-            task_name = "{}.{}".format(t.package_name, t.launchfile_name)
-            task_script = importlib.import_module(task_name)
             required_tasks = getattr(task_script, 'required_tasks')
         except ImportError:
             required_tasks = []
@@ -321,6 +327,8 @@ class TaskActionServer(object):
         print('Required Dependencies: {}'.format(required_tasks))
         for x in required_tasks:
             if x not in running_tasks:
+                print('{} not in running tasks'.format(x))
+                print('running tasks are: {}'.format(running_tasks))
                 package_name, launchfile_name = x.split('/')
                 dep_task = Task(
                     workspace_name='',
@@ -333,10 +341,7 @@ class TaskActionServer(object):
 
         p, devnull = self.start_task_launchfile(t)
 
-        task_name = "{}.{}".format(t.package_name, t.launchfile_name)
-        task_script = importlib.import_module(task_name)
-
-        self._feedback.status = "Starting..."
+        self._feedback.status = 'Starting...'
         success = True
 
         task_thread = self.start_task_thread(
@@ -389,8 +394,8 @@ if __name__ == '__main__':
 
         def stop_agent():
             task_interface.continuous_lock.acquire()
-            for task in task_interface.running_continuous_tasks:
-                task_interface.running_continuous_tasks[task][1] = False
+            for gh in task_interface._as_continuous.goals.values():
+                gh.set_cancel_requested()
             task_interface.continuous_lock.release()
             server_client.unregister_agent(agent_name)
 

@@ -1,0 +1,5 @@
+geometry_msgs/Pose location
+long_term_deployment/Task task
+time start_after
+time finish_before
+time estimated_duration

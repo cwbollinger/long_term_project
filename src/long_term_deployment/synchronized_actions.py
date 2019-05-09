@@ -100,20 +100,25 @@ class SynchronizedActionServer(object):
         self.server = ActionServer(
             namespace,
             action_spec,
-            goal_start_fn,
-            goal_stop_fn,
+            self.receive_goal,
+            self.stop_fn,
             auto_start=False)
         self.server.start()
 
     def task_id_cb(self, request):
-        idx = request.task_id
-        if idx in self.goals:
-            gh = self.goals[idx]
+        key = request.task_id
+        if key in self.goals:
+            rospy.loginfo('task_id_cb: successfully found task {}.'.format(key))
+            gh = self.goals[key]
             return GetTaskFromIDResponse(gh.get_goal())
+        else:
+            rospy.logwarn('task_id_cb: could not find requested goal {}'.format(key))
+            rospy.logwarn('task_id_cb: running goals: {}'.format(self.goals.keys()))
         return GetTaskFromIDResponse()
 
     def receive_goal(self, gh):
-        self.goals[gh.get_goal_id()] = gh
+        self.goals[gh.get_goal_id().id] = gh
+        print('Goals: {}'.format(self.goals.keys()))
         self.goal_start_fn(gh)
 
     def stop_fn(self, gh):

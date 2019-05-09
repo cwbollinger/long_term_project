@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
 	roscpp
 	rospy
 	std_msgs
+	geometry_msgs
     actionlib_msgs
 	message_generation
 )
@@ -54,6 +55,8 @@ add_message_files(
   AgentDescription.msg
   AgentStatus.msg
   Task.msg
+  ConstrainedTask.msg
+  ScheduledTask.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -62,6 +65,8 @@ add_service_files(
   RegisterAgent.srv
   UnregisterAgent.srv
   GetRegisteredAgents.srv
+  ScheduleTask.srv
+  GetSchedule.srv
   QueueTask.srv
   QueueTaskList.srv
   AgentStatusList.srv
@@ -79,6 +84,7 @@ add_action_files(
 generate_messages(
   DEPENDENCIES
   std_msgs  # Or other packages containing msgs
+  geometry_msgs
   actionlib_msgs
 )
 

@@ -32,6 +32,8 @@
                      ]
     # Services running locally to expose remotely
     local_services: [
+                        ['/robot_client/active/get_goal_from_id', 'long_term_deployment/GetTaskFromID', '/turtlebot_agent/active/get_goal_from_id'],
+                        ['/robot_client/continuous/get_goal_from_id', 'long_term_deployment/GetTaskFromID', '/turtlebot_agent/continuous/get_goal_from_id']
                     ]
     # Parameters to be sync, they will be polled to stay in sync
     #parameters: []
