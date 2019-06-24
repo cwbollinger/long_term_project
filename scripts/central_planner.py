@@ -16,7 +16,7 @@ import subprocess
 class CentralPlanner(object):
 
     def __init__(self):
-        self.op_solver_path = os.path.expanduser('~/rob534/OP_simulator')
+        self.op_solver_path = os.path.expanduser('~/catkin_ws/OP_simulator')
         self.schedule_task = rospy.Service('~schedule_task',
                                            ScheduleTask, self.schedule_task)
         self.get_plan = rospy.Service('~get_schedule', GetSchedule, self.get_schedule)
@@ -29,6 +29,9 @@ class CentralPlanner(object):
 
     def get_schedule(self, req):
         paths = self.get_path_lengths_for_agent(req.agent_name)
+        if paths is None:
+            return []  # can't compute schedule without edge lengths
+
         self.write_problem_to_file(paths)
         rospy.loginfo('Calling OP Solver...')
         try:
@@ -38,8 +41,9 @@ class CentralPlanner(object):
         except subprocess.CalledProcessError as e:
             rospy.logerr('Error running OP code: {}'.format(e))
             return []
-        except:
-            rospy.logerr('OH NO')
+        except Exception as e:
+            rospy.logerr('TERRIBLY WRONG')
+            rospy.logerr(e)
         rospy.loginfo('Solution found!')
 
         schedule = self.read_schedule_from_file()
@@ -75,7 +79,7 @@ class CentralPlanner(object):
                     distances[i, j] = self.get_path_length(make_plan(start, end, 0.2))
                 except rospy.ServiceException as e:
                     print('Failure: {}'.format(e))
-                    return []
+                    return None
 
         return distances
 

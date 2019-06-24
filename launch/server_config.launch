@@ -4,6 +4,7 @@
     <param name="unregister_timeout" value = "10.0"/>
   </node>
   <node pkg="long_term_deployment" type="task_server.py" name="task_server" output="screen" required="true"/>
+  <node pkg="long_term_deployment" type="central_planner.py" name="central_planner" output="screen" required="true"/>
 
   <node pkg="long_term_deployment" type="map_manager.py" name="map_manager" output="screen"/>
   <!--
