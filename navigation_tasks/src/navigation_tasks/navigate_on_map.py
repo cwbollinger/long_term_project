@@ -10,6 +10,7 @@ from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from rosduct.srv import ROSDuctConnection
 from long_term_deployment.srv import RequestMap
 
+
 def main(stop_event, args):
     ''' Takes a threading.Event to know if preemption is needed '''
     if len(args) == 0:
@@ -20,6 +21,7 @@ def main(stop_event, args):
 
     expose_service = rospy.ServiceProxy('/rosduct/expose_remote_service', ROSDuctConnection)
     expose_topic = rospy.ServiceProxy('/rosduct/expose_remote_topic', ROSDuctConnection)
+    expose_local_service = rospy.ServiceProxy('/rosduct/expose_local_service', ROSDuctConnection)
 
     expose_service(conn_name='/map_manager/serve_map',
                    conn_type='long_term_deployment/RequestMap',
@@ -28,7 +30,7 @@ def main(stop_event, args):
     print('request map')
     request_map = rospy.ServiceProxy('/map_manager/serve_map', RequestMap)
     request_map(map_name)
-    
+
     print('expose map metadata')
     expose_topic(conn_name='/maps/{}/map_metadata'.format(map_name),
                  conn_type='nav_msgs/MapMetaData',
@@ -46,15 +48,22 @@ def main(stop_event, args):
                    conn_type='nav_msgs/GetMap',
                    alias_name='/static_map')
 
+    agent_name = rospy.get_param('~agent_name', 'default')
+    expose_local_service(conn_name='/move_base/make_plan',
+                         conn_type='nav_msgs/GetPlan',
+                         alias_name='/{}/move_base/make_plan'.format(agent_name))
+
     r = rospy.Rate(10)
     while not stop_event.isSet():
         r.sleep()
-    
+
     print('closing all things')
     # close all the new tunnels we opened in the bridge
     close_service = rospy.ServiceProxy('/rosduct/close_remote_service', ROSDuctConnection)
+    close_local_service = rospy.ServiceProxy('/rosduct/close_local_service', ROSDuctConnection)
     close_topic = rospy.ServiceProxy('/rosduct/close_remote_topic', ROSDuctConnection)
 
+    close_local_service(conn_name='/move_base/make_plan')
     close_service(conn_name='/map_manager/serve_map')
     close_topic(conn_name='/maps/{}/map_metadata'.format(map_name))
     close_topic(conn_name='/maps/{}/map'.format(map_name))

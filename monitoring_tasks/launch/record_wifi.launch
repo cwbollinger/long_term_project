@@ -1,0 +1,4 @@
+<launch>
+    <node pkg="monitoring_tasks" name="wifi_node" type="wifi_node.py"/>
+    <node pkg="monitoring_tasks" name="rosbag_control" type="rosbag_remote_control.py" args="-m ros -i '/wireless /tf' -f default.bag -d /home/chris/bags/ -t /rosbagctrl"/>
+</launch>

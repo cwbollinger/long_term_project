@@ -2,7 +2,7 @@
   <arg name="initial_pose_x" default="2.0"/>
   <arg name="initial_pose_y" default="2.0"/>
   <arg name="initial_pose_a" default="0.0"/>
-  <arg name="vel_topic" default="false"/> <!-- by default does not override move_base default config -->
+  <arg name="vel_topic"/>
 
   <!--  ************** Navigation  ***************  -->
   <include file="$(find navigation_tasks)/launch/includes/move_base.launch.xml">
