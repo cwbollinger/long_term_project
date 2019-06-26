@@ -1,33 +1,37 @@
 <launch>
+  <!-- params for long term system -->
   <rosparam ns="client_params">
-    vel_topic: '/cmd_vel'
+      robot_type: 'erratic'
+      vel_topic: '/cmd_vel'
   </rosparam>
 
   <rosparam ns="client_capability">
-    navigation:
-        type: differential 
-        topic: '/cmd_vel'
-    sensors:
-        camera:
-            depth: true
-            topic: '/camera'
-        lidar:
-            height: 150  # mm
-            fov: 0.349   # radians
-            topic: '/scan'
+      navigation:
+          type: differential
+          topic: '/cmd_vel'
+      sensors:
+          camera:
+              depth: true
+              topic: '/camera'
+          lidar:
+              height: 150  # mm
+              fov: 0.349   # radians
+              topic: '/scan'
   </rosparam>
 
-  <param name="robot_description" command="$(find xacro)/xacro '$(find erratic_description)/urdf/erratic.urdf.xacro'" />
+  <!-- robot drivers bringup -->
   <include file="$(find erratic_player)/launch/erratic_base.launch"/>
+  <param name="robot_description" command="$(find xacro)/xacro '$(find erratic_description)/urdf/erratic.urdf.xacro'" />
   <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" output="screen">
-    <param name="publish_frequency" type="double" value="50.0"/>
+      <param name="publish_frequency" type="double" value="50.0"/>
   </node>
-  <node name="camera_frame_broadcaster" pkg="tf" type="static_transform_publisher" args="0 0 0 0 0 0 base_footprint camera_depth_frame 100"/>
 
-  <include file="$(find turtlebot_bringup)/launch/3dsensor.launch">
-    <arg name="3d_sensor" value="asus_xtion_pro"/>
-  </include>
+  <node name="lidar_transform" pkg="tf" type="static_transform_publisher" args="0 0 0 0 0 0 base_link base_scan 10"/>
+  <node name="hokuyo_lidar" pkg="urg_node" type="urg_node">
+      <param name="frame_id" value="base_scan"/>
+  </node>
 
+  <!-- startup rosduct config -->
   <node pkg="rosduct" name="rosduct" type="rosduct_main.py" output="screen" respawn="true">
     <rosparam>
     # ROSbridge websocket server info
@@ -57,6 +61,8 @@
                      ]
     # Services running locally to expose remotely
     local_services: [
+                        ['/robot_client/active/get_goal_from_id', 'long_term_deployment/GetTaskFromID', '/erratic_agent/active/get_goal_from_id'],
+                        ['/robot_client/continuous/get_goal_from_id', 'long_term_deployment/GetTaskFromID', '/erratic_agent/continuous/get_goal_from_id']
                     ]
     # Parameters to be sync, they will be polled to stay in sync
     #parameters: []
@@ -65,7 +71,8 @@
     </rosparam>
   </node>
 
+  <!-- task management client node -->
   <node pkg="long_term_deployment" name="robot_client" type="client.py" output="screen">
-    <param name="agent_name" value="erratic"/>
+      <param name="agent_name" value="erratic"/>
   </node>
 </launch>

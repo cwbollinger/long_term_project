@@ -137,6 +137,7 @@ class TaskActionServer(object):
 
         launch_args = ['{}:={}'.format(k, v)
                        for k, v in self.client_params.items()]
+        #rospy.logdebug('Launchfile Args: {}'.format(launch_args))
         cmdlist = [
             os.path.expanduser('{}/devel/env.sh').format(workspace_name),
             'roslaunch',
@@ -144,6 +145,7 @@ class TaskActionServer(object):
             '{}.launch'.format(task.launchfile_name)] + launch_args
 
         devnull = None if task.debug else open(os.devnull, 'w')
+        rospy.logwarn('Launchfile Command Args: {}'.format(cmdlist))
         p = subprocess.Popen(cmdlist, stdout=devnull, stderr=devnull)
         return p, devnull
 
@@ -385,7 +387,7 @@ class TaskActionServer(object):
 
 
 if __name__ == '__main__':
-    rospy.init_node('robot_client')
+    rospy.init_node('robot_client', log_level=rospy.INFO)
     name = rospy.get_param('~agent_name', 'default')
     task_interface = TaskActionServer()
     try:
