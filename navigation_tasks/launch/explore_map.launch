@@ -1,4 +1,0 @@
-<launch>
-    <node name="exploration_commander" pkg="navigation_tasks" type="start_exploration.py" required="true"/>
-    <include file="$(find navigation_tasks)/launch/explore_global_map.launch"/>
-</launch>

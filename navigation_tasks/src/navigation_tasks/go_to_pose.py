@@ -21,9 +21,9 @@ def main(stop_event, args):
     '''
 
     move_client = actionlib.SimpleActionClient('move_base', MoveBaseAction)
-    print('waiting for move_base action server')
+    rospy.loginfo('waiting for move_base action server')
     move_client.wait_for_server()
-    print('Server found!')
+    rospy.loginfo('Server found!')
 
     goal = MoveBaseGoal()
     goal.target_pose.header.frame_id = 'map'
@@ -45,7 +45,7 @@ def main(stop_event, args):
 
     r = rospy.Rate(10)
     while not stop_event.isSet() and not status['finished']:
-        # print(stop_event.isSet(), status['finished'])
+        rospy.logdebug(stop_event.isSet(), status['finished'])
         r.sleep()
 
     if not stop_event.isSet():

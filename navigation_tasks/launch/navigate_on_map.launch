@@ -1,7 +1,15 @@
 <!-- Launches navigation stack for the indicated static map -->
 <launch>
     <arg name="vel_topic"/>
-    <include file="$(find navigation_tasks)/launch/bringup_navigation.launch">
-      <arg name="vel_topic" value="$(arg vel_topic)"/> <!-- by default does not override move_base default config -->
+    <arg name="robot_type"/>
+
+    <arg name="initial_pose_x" default="0.0"/>
+    <arg name="initial_pose_y" default="0.0"/>
+    <arg name="initial_pose_a" default="0.0"/>
+
+    <include file="$(find long_term_configs)/launch/$(arg robot_type)_navigation_bringup.launch">
+        <arg name="initial_pose_x" default="$(arg initial_pose_x)"/>
+        <arg name="initial_pose_y" default="$(arg initial_pose_y)"/>
+        <arg name="initial_pose_a" default="$(arg initial_pose_a)"/>
     </include>
 </launch>
