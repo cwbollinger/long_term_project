@@ -11,7 +11,7 @@ from long_term_deployment.srv import RequestMap, RequestMapResponse
 class MapManager:
 
     def __init__(self):
-        self.mapdir = path.normpath(path.join(path.dirname(__file__), '../maps'))
+        self.mapdir = path.normpath(path.join(path.dirname(__file__), path.expanduser('~/maps')))
         self.served_maps = {}
         self.serve_map_service = rospy.Service('~serve_map', RequestMap, self.serve_map)
         self.end_serve_map_service = rospy.Service('~end_serve_map', RequestMap, self.end_serve_map)

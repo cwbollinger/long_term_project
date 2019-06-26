@@ -60,77 +60,77 @@ def draw_menu(stdscr):
                 'long_term_deployment',
                 'test_task',
                 ['5'],
-                False), AgentDescription('turtlebot', 'turtlebot'))
+                False), AgentDescription('erratic', 'erratic'))
         elif num == 1:
             start_continuous_task_proxy(Task(
                 '',
                 'navigation_tasks',
                 'navigate_on_map',
-                ['maze'],
-                False), AgentDescription('turtlebot', 'turtlebot'))
+                ['graf'],
+                True), AgentDescription('erratic', 'erratic'))
         elif num == 2:
             stop_continuous_task_proxy(Task(
                 '',
                 'navigation_tasks',
                 'navigate_on_map',
-                ['maze'],
-                False), AgentDescription('turtlebot', 'turtlebot'))
+                ['graf'],
+                True), AgentDescription('erratic', 'erratic'))
         elif num == 3:
             start_continuous_task_proxy(Task(
                 '',
                 'navigation_tasks',
                 'build_new_map',
                 ['new_maze'],
-                False), AgentDescription('turtlebot', 'turtlebot'))
+                False), AgentDescription('erratic', 'erratic'))
         elif num == 4:
             stop_continuous_task_proxy(Task(
                 '',
                 'navigation_tasks',
                 'build_new_map',
                 ['new_maze'],
-                False), AgentDescription('turtlebot', 'turtlebot'))
+                False), AgentDescription('erratic', 'erratic'))
         elif num == 5:
             start_continuous_task_proxy(Task(
                 '',
                 'navigation_tasks',
                 'explore_map',
                 [],
-                True), AgentDescription('turtlebot', 'turtlebot'))
+                True), AgentDescription('erratic', 'erratic'))
         elif num == 6:
             stop_continuous_task_proxy(Task(
                 '',
                 'navigation_tasks',
                 'explore_map',
                 [],
-                False), AgentDescription('turtlebot', 'turtlebot'))
+                False), AgentDescription('erratic', 'erratic'))
         elif num == 7:
             queue_active_task_proxy(Task(
                 '',
                 'navigation_tasks',
                 'go_to_pose',
                 ['5.0', '5.0', '0.0'],
-                False), AgentDescription('turtlebot', 'turtlebot'))
+                False), AgentDescription('erratic', 'erratic'))
         elif num == 8:
             queue_active_task_proxy(Task(
                 '',
                 'navigation_tasks',
                 'go_to_pose',
                 ['2.0', '2.0', '0.0'],
-                False), AgentDescription('turtlebot', 'turtlebot'))
+                False), AgentDescription('erratic', 'erratic'))
         elif num == 9:
             start_continuous_task_proxy(Task(
                 '',
                 'monitoring_tasks',
                 'record_wifi',
                 ['test_file'],
-                False), AgentDescription('turtlebot', 'turtlebot'))
+                False), AgentDescription('erratic', 'erratic'))
         elif num == -1:
             stop_continuous_task_proxy(Task(
                 '',
                 'monitoring_tasks',
                 'record_wifi',
                 ['test_file'],
-                False), AgentDescription('turtlebot', 'turtlebot'))
+                False), AgentDescription('erratic', 'erratic'))
 
         num = None
 
@@ -140,12 +140,12 @@ def draw_menu(stdscr):
         stdscr.addstr(2, 0, '-' * (width - 1))
         stdscr.addstr(int(height // 2), 0, '-' * (width - 1))
         stdscr.addstr(int(height // 2) + 1, 0, 'Press "0" to queue "test_task"')
-        stdscr.addstr(int(height // 2) + 2, 0, 'Press "1" to start navigation on turtlebot agent')
-        stdscr.addstr(int(height // 2) + 3, 0, 'Press "2" to stop navigation on turtlebot agent')
-        stdscr.addstr(int(height // 2) + 4, 0, 'Press "3" to start building a map on turtlebot agent')
-        stdscr.addstr(int(height // 2) + 5, 0, 'Press "4" to stop building a map on turtlebot agent')
-        stdscr.addstr(int(height // 2) + 6, 0, 'Press "5" to start frontier exploration on turtlebot agent')
-        stdscr.addstr(int(height // 2) + 7, 0, 'Press "6" to stop frontier exploration on turtlebot agent')
+        stdscr.addstr(int(height // 2) + 2, 0, 'Press "1" to start navigation on erratic agent')
+        stdscr.addstr(int(height // 2) + 3, 0, 'Press "2" to stop navigation on erratic agent')
+        stdscr.addstr(int(height // 2) + 4, 0, 'Press "3" to start building a map on erratic agent')
+        stdscr.addstr(int(height // 2) + 5, 0, 'Press "4" to stop building a map on erratic agent')
+        stdscr.addstr(int(height // 2) + 6, 0, 'Press "5" to start frontier exploration on erratic agent')
+        stdscr.addstr(int(height // 2) + 7, 0, 'Press "6" to stop frontier exploration on erratic agent')
         stdscr.addstr(int(height // 2) + 8, 0, 'Press "7" to go to 5,5 on map')
         stdscr.addstr(int(height // 2) + 9, 0, 'Press "8" to go to 2,2 on map')
         stdscr.addstr(int(height // 2) + 10, 0, 'Press "9" to start recording wifi levels')

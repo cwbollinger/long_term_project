@@ -16,7 +16,7 @@ import subprocess
 class CentralPlanner(object):
 
     def __init__(self):
-        self.op_solver_path = os.path.expanduser('~/catkin_ws/OP_simulator')
+        self.op_solver_path = os.path.expanduser('~/long_term_ws/OP_simulator')
         self.schedule_task = rospy.Service('~schedule_task',
                                            ScheduleTask, self.schedule_task)
         self.get_plan = rospy.Service('~get_schedule', GetSchedule, self.get_schedule)
@@ -32,18 +32,20 @@ class CentralPlanner(object):
         if paths is None:
             return []  # can't compute schedule without edge lengths
 
-        self.write_problem_to_file(paths)
+        file_paths = self.write_problem_to_file(paths)
         rospy.loginfo('Calling OP Solver...')
         try:
-            exe = os.path.join(self.op_solver_path, 'solve.bash')
-            print(exe)
-            subprocess.check_output([exe])
+            script = os.path.join(self.op_solver_path, 'time_window_service_times_solver.py')
+            cmd = ['python3', script] + file_paths
+            print(cmd)
+            subprocess.check_output(cmd)
         except subprocess.CalledProcessError as e:
             rospy.logerr('Error running OP code: {}'.format(e))
             return []
         except Exception as e:
             rospy.logerr('TERRIBLY WRONG')
             rospy.logerr(e)
+            return []
         rospy.loginfo('Solution found!')
 
         schedule = self.read_schedule_from_file()
@@ -76,7 +78,11 @@ class CentralPlanner(object):
                 start.pose = loc1
                 end.pose = loc2
                 try:
-                    distances[i, j] = self.get_path_length(make_plan(start, end, 0.2))
+                    rospy.loginfo('Getting distance from {} to {}...'.format(start.pose, end.pose))
+                    path = make_plan(start, end, 0.2)
+                    distances[i, j] = self.get_path_length(path)
+                    rospy.loginfo('Distance: {}'.format(distances[i, j]))
+                    
                 except rospy.ServiceException as e:
                     print('Failure: {}'.format(e))
                     return None
@@ -95,19 +101,23 @@ class CentralPlanner(object):
         with open(distfile, 'w') as d, open(windowfile, 'w') as w:
             np.save(d, distances)
             np.save(w, windows)
+        return [distfile, windowfile]
 
     def read_schedule_from_file(self):
-        sol_file = os.path.join('solution.npy', self.op_solver_path)
+        sol_file = os.path.join(self.op_solver_path, 'solution.npy')
         sol_mat = np.load(sol_file)
         solution = []
         for i, t in enumerate(self.tasks):
             s = ScheduledTask()
             s.task = t.task
             s.location = t.location
-            s.arrival_time = sol_mat[i, 0]
-            s.departure_time = sol_mat[i, 1]
             s.duration = t.estimated_duration
             solution.append(s)
+
+        for idx in range(len(sol_mat)/2):
+            n = sol_mat[2*idx, 0]
+            solution[n].arrival_time = rospy.Time.from_sec(sol_mat[2*idx, 1])
+            solution[n].departure_time = rospy.Time.from_sec(sol_mat[2*idx+1, 1])
 
         # reorder by arrival time
         solution.sort(key=lambda t: t.arrival_time)

@@ -47,7 +47,6 @@ class LongTermAgentServer(object):
     def __init__(self):
         self.agents = []
         self.task_queue = []
-        rospy.init_node('task_server')
         self.s1 = rospy.Service('~register_agent', RegisterAgent, self.handle_register_agent)
         self.s2 = rospy.Service('~unregister_agent', UnregisterAgent, self.handle_unregister_agent)
         self.s3 = rospy.Service('~get_agents', GetRegisteredAgents, self.handle_get_agents)
@@ -67,7 +66,7 @@ class LongTermAgentServer(object):
 
     def handle_register_agent(self, req):
         if req.description not in self.agents:
-            print('registering agent: {}'.format(req.description.agent_name))
+            rospy.loginfo('registering agent: {}'.format(req.description.agent_name))
             c = Client(req.description.agent_name, req.description.agent_type, None, None, rospy.get_time())
             self.agents.append(c)
             return RegisterAgentResponse(True, req.description.agent_name)
@@ -76,7 +75,7 @@ class LongTermAgentServer(object):
     def handle_unregister_agent(self, req):
         names = [a.name for a in self.agents]
         if req.agent_name in names:
-            print('unregistering agent: "{}"'.format(req.agent_name))
+            rospy.loginfo('unregistering agent: "{}"'.format(req.agent_name))
             agent = self.agents[names.index(req.agent_name)]
             active_task = get_task_from_gh(agent.active_action_client.client.gh)
             if active_task is not None:
@@ -95,12 +94,14 @@ class LongTermAgentServer(object):
 
     def start_continuous_task(self, req):
         agent = next((a for a in self.agents if a.name == req.agent.agent_name), None)
-        if agent is not None:
+        if agent is None:
+            return QueueTaskResponse(False)
+        elif agent.background_action_client is None:
+            return QueueTaskResponse(False)
+        else:
             agent.last_ping_time = rospy.get_time()
             agent.background_action_client.send_goal(TaskGoal(req.task), feedback_cb=self.cb_creator(agent))
             return QueueTaskResponse(True)
-        else:
-            return QueueTaskResponse(False)
 
     def stop_continuous_task(self, req):
         agent = next((a for a in self.agents if a.name == req.agent.agent_name), None)
@@ -121,23 +122,24 @@ class LongTermAgentServer(object):
 
     def queue_task(self, req):
         # tasks can optionally specify a specific agent to assign to
+        # if that agent is not available, just assign to anyone
         names = [a.name for a in self.agents]
         if req.agent.agent_name in names:
             agent = self.agents[names.index(req.agent.agent_name)]
             if agent.active_action_client is None:
-                print('agent {} not initialized yet, cannot assign task...'.format(agent.name))
+                rospy.loginfo('agent {} not initialized yet, cannot assign task...'.format(agent.name))
                 return QueueTaskResponse(False)
             status = agent.active_action_client.get_state()
             if status not in self.TERMINAL_STATES:
-                print('agent {} not available, currently busy'.format(agent.name))
+                rospy.loginfo('agent {} not available, currently busy'.format(agent.name))
                 # print('will wait until goal is complete...')
             else:
                 agent.last_ping_time = rospy.get_time()
                 agent.active_action_client.send_goal(TaskGoal(req.task), feedback_cb=self.cb_creator(agent))
-                print('Goal Sent!')
+                rospy.loginfo('Goal Sent!')
         else:
             self.task_queue.append(req.task)
-            print('task queued...')
+            rospy.loginfo('task queued...')
         return QueueTaskResponse(True)
 
     def get_queued_tasks(self, req):
@@ -170,17 +172,17 @@ class LongTermAgentServer(object):
             if len(self.task_queue) == 0:
                 return
             if agent.active_action_client is None:
-                print('agent {} not initialized yet, skip for now...'.format(agent.name))
+                rospy.loginfo('agent {} not initialized yet, skip for now...'.format(agent.name))
                 continue  # not initialized fully, move on
 
             status = agent.active_action_client.get_state()
             if status in self.TERMINAL_STATES:
-                print('agent {} available'.format(agent.name))
+                rospy.loginfo('agent {} available'.format(agent.name))
                 # print('will wait until goal is complete...')
                 active_task = self.task_queue.pop(0)
                 agent.last_ping_time = rospy.get_time()
                 agent.active_action_client.send_goal(TaskGoal(active_task), feedback_cb=self.cb_creator(agent))
-                print('Goal Sent!')
+                rospy.loginfo('Goal Sent!')
                 # agent.active_action_client.wait_for_result()
                 # print('Result Complete!')
 
@@ -200,7 +202,7 @@ class LongTermAgentServer(object):
             # print('{}: {:.3f}s since last ping'.format(agent.name, t-agent.last_ping_time))
             if t - agent.last_ping_time > 10:
                 msg = '{} seems disconnected, requeueing task and removing agent from pool'
-                print(msg.format(agent.name))
+                rospy.logwarn(msg.format(agent.name))
                 self.task_queue.append(active_task)  # recover task so it is not lost
                 del self.agents[i]
 
@@ -208,26 +210,26 @@ class LongTermAgentServer(object):
 
         for agent in self.agents:
             if agent.active_action_client is None:  # this should run once per agent
-                print('agent setup for {}'.format(agent.name))
+                rospy.loginfo('agent setup for {}'.format(agent.name))
                 action_client_name = '{}_agent'.format(agent.name)
-                print('waiting for active server')
+                rospy.loginfo('waiting for active server {}/active'.format(action_client_name))
                 agent.active_action_client = SynchronizedSimpleActionClient(action_client_name + '/active', TaskAction)
-                print('server found')
-                print('waiting for continuous server')
+                rospy.loginfo('active server found')
+                rospy.loginfo('waiting for continuous server {}/continuous'.format(action_client_name))
                 agent.background_action_client = SynchronizedActionClient(
                     action_client_name + '/continuous',
                     TaskAction)
-                print('server found')
+                rospy.loginfo('continuous server found')
 
             status = agent.active_action_client.get_state()
             if status == GoalStatus.SUCCEEDED:
                 result = agent.active_action_client.get_result()
-                print('Result Returned:')
-                print(base64.b64decode(result.success_msg))
+                rospy.loginfo('Result Returned:')
+                rospy.loginfo(base64.b64decode(result.success_msg))
                 agent.active_action_client.stop_tracking_goal()
 
             if len(agent.background_action_client.goals) > 0:
-                print(agent.name)
+                rospy.logdebug(agent.name)
 
             for idx, gh in enumerate(agent.background_action_client.goals):
                 task = get_task_from_gh(gh)
@@ -249,10 +251,11 @@ class LongTermAgentServer(object):
                 else:
                     status_str = 'Something else? {}'.format(status)
 
-                print('\t{}: {}'.format(launchfile_name, status_str))
+                rospy.logdebug('\t{}: {}'.format(launchfile_name, status_str))
 
 
 if __name__ == '__main__':
+    rospy.init_node('task_server', log_level=rospy.INFO)
     task_server = LongTermAgentServer()
-    print('Ready to register agents...')
+    rospy.loginfo('Ready to register agents...')
     task_server.main()

@@ -157,7 +157,9 @@ class SynchronizedSimpleActionClient(object):
         #     self.client.action_client.ActionGoal,
         #     self.add_new_goal)
 
+        rospy.logdebug('Connecting to action server')
         self.client.wait_for_server()
+        rospy.logdebug('Waiting for sync service')
         rospy.wait_for_service(action_namespace + '/get_goal_from_id')
         self.goal_from_id = rospy.ServiceProxy(
             action_namespace + '/get_goal_from_id',
