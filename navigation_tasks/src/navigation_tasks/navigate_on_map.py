@@ -66,9 +66,11 @@ def main(stop_event, args, client_params):
     start_pose.pose_cov.pose.orientation = Quaternion(*quaternion_from_euler(0, 0, client_params['start_a']))
     while not stop_event.isSet():
         if not localized and pose_pub.get_num_connection() > 0:
-            pose_pub.publish()
+            pose_pub.publish(start_pose)
             localized = True
-            
+        elif localized:
+            pose_pub.unregister()
+
         r.sleep()
 
     # close all the new tunnels we opened in the bridge
