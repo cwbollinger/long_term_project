@@ -3,7 +3,7 @@ import threading
 
 import rospy
 
-def main(stop_event, args): # doesn't handle preemption, but whatever
+def main(stop_event, args, client_params): # doesn't handle preemption, but whatever
     start_time = float(args[0]) if len(args) > 0 else 5.0
     sleepytime = start_time
     while sleepytime > 0.0:
