@@ -112,7 +112,7 @@ class TaskActionServer(object):
         # make the main() in each task less nasty
         def t_main(s, q):
             try:
-                retval = func(stop_event, args)
+                retval = func(stop_event, args, self.client_params)
                 print("Task return value: {}".format(retval))
                 q.put((True, retval))
             except BaseException:

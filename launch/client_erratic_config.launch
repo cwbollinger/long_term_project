@@ -3,6 +3,9 @@
   <rosparam ns="client_params">
       robot_type: 'erratic'
       vel_topic: '/cmd_vel'
+      start_x: 0.0
+      start_y: 0.0
+      start_a: 0.0
   </rosparam>
 
   <rosparam ns="client_capability">
