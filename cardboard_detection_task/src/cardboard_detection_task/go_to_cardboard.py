@@ -107,7 +107,7 @@ def get_smach_sm():
     return sm
 
 
-def main(stop_event, args):
+def main(stop_event, args, client_params):
     ''' Takes a threading.Event to know if preemption is needed
 
     Returns a string representing the return status (json?)

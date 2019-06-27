@@ -134,7 +134,7 @@ class Node:
 
 
 
-def main(stop_event, args):
+def main(stop_event, args, client_params):
 
     ar_tag_frame = 'tag_{}'.format(args[0])
     if len(args) == 1 or args[1] == '':

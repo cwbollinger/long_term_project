@@ -15,7 +15,7 @@ from long_term_deployment.srv import RequestMap
 
 required_tasks = ['navigation_tasks/navigate_on_map']
 
-def main(stop_event, args):
+def main(stop_event, args, client_params):
     ''' Takes a threading.Event to know if preemption is needed
 
     '''

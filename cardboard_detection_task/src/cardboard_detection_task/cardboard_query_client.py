@@ -48,7 +48,7 @@ class Node:
             self.n = None
 
 
-def main(stop_event, args):
+def main(stop_event, args, client_params):
     image_topic = "/head_camera/rgb/image_raw/compressed"
 
     node = Node(image_topic)

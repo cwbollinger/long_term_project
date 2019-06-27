@@ -10,7 +10,7 @@ from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from rosduct.srv import ROSDuctConnection
 from long_term_deployment.srv import RequestMap
 
-def main(stop_event, args):
+def main(stop_event, args, client_params):
     ''' Takes a threading.Event to know if preemption is needed '''
     map_name = args[0]
     rospy.loginfo('Saving map : "{}"'.format(map_name))

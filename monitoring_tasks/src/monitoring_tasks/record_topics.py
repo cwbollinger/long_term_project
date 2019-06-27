@@ -17,7 +17,7 @@ from long_term_deployment.srv import RequestMap
 required_tasks = []
 
 
-def main(stop_event, args):
+def main(stop_event, args, client_params):
     ''' Takes a threading.Event to know if preemption is needed '''
 
     bag_name = args[0]
