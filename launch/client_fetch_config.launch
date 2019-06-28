@@ -3,9 +3,6 @@
   <rosparam ns="client_params">
       robot_type: 'fetch'
       vel_topic: '/cmd_vel'
-      start_x: 5.9
-      start_y: 1.1
-      start_a: 0.0
   </rosparam>
 
   <rosparam ns="client_capability">
