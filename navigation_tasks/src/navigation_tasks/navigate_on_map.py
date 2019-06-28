@@ -4,7 +4,7 @@ import subprocess
 import rospy
 import actionlib
 
-from geometry_msgs.msg import PoseWithCovarianceStamped, Quaternion
+from geometry_msgs.msg import Quaternion
 
 from actionlib_msgs.msg import GoalStatus
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
@@ -26,6 +26,7 @@ def main(stop_event, args, client_params):
     expose_service = rospy.ServiceProxy('/rosduct/expose_remote_service', ROSDuctConnection)
     expose_topic = rospy.ServiceProxy('/rosduct/expose_remote_topic', ROSDuctConnection)
     expose_local_service = rospy.ServiceProxy('/rosduct/expose_local_service', ROSDuctConnection)
+    expose_local_topic = rospy.ServiceProxy('/rosduct/expose_local_topic', ROSDuctConnection)
 
     expose_service(conn_name='/map_manager/serve_map',
                    conn_type='long_term_deployment/RequestMap',
@@ -57,20 +58,24 @@ def main(stop_event, args, client_params):
                          conn_type='nav_msgs/GetPlan',
                          alias_name='/{}/move_base/make_plan'.format(agent_name))
 
-    r = rospy.Rate(10)
-    localized = False
-    pose_pub = rospy.Publisher('/initialpose', PoseWithCovarianceStamped)
-    start_pose = PoseWithCovarianceStamped()
-    start_pose.pose_cov.pose.position.x = client_params['start_x']
-    start_pose.pose_cov.pose.position.y = client_params['start_y']
-    start_pose.pose_cov.pose.orientation = Quaternion(*quaternion_from_euler(0, 0, client_params['start_a']))
-    while not stop_event.isSet():
-        if not localized and pose_pub.get_num_connection() > 0:
-            pose_pub.publish(start_pose)
-            localized = True
-        elif localized:
-            pose_pub.unregister()
+    expose_local_topic(conn_name='/robot_pose',
+                 conn_type='geometry_msgs/PoseStamped',
+                 alias_name='{}/robot_pose'.format(agent_name),
+                 latch=False)
 
+    r = rospy.Rate(10)
+    # localized = False
+    # pose_pub = rospy.Publisher('/initialpose', PoseWithCovarianceStamped)
+    # start_pose = PoseWithCovarianceStamped()
+    # start_pose.pose_cov.pose.position.x = client_params['start_x']
+    # start_pose.pose_cov.pose.position.y = client_params['start_y']
+    # start_pose.pose_cov.pose.orientation = Quaternion(*quaternion_from_euler(0, 0, client_params['start_a']))
+    while not stop_event.isSet():
+        # if not localized and pose_pub.get_num_connection() > 0:
+        #     pose_pub.publish(start_pose)
+        #     localized = True
+        # elif localized:
+        #     pose_pub.unregister()
         r.sleep()
 
     # close all the new tunnels we opened in the bridge
