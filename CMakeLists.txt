@@ -8,12 +8,12 @@ project(long_term_deployment)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-	roscpp
-	rospy
-	std_msgs
-	geometry_msgs
-    actionlib_msgs
-	message_generation
+  roscpp
+  rospy
+  std_msgs
+  geometry_msgs
+  actionlib_msgs
+  message_generation
 )
 
 ## System dependencies are found with CMake's conventions
@@ -67,6 +67,7 @@ add_service_files(
   GetRegisteredAgents.srv
   ScheduleTask.srv
   GetSchedule.srv
+  AssignSchedule.srv
   QueueTask.srv
   QueueTaskList.srv
   AgentStatusList.srv

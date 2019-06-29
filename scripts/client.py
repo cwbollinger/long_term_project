@@ -21,7 +21,7 @@ import Queue
 class LongTermAgentClient(object):
 
     def __init__(self):
-        print('Waiting for services...')
+        rospy.loginfo('Waiting for services...')
         rospy.wait_for_service('/task_server/register_agent')
         self.register_agent_proxy = rospy.ServiceProxy(
             '/task_server/register_agent',
@@ -34,7 +34,7 @@ class LongTermAgentClient(object):
         self.get_agents_proxy = rospy.ServiceProxy(
             '/task_server/get_agents',
             GetRegisteredAgents)
-        print('Services found!')
+        rospy.loginfo('Services found!')
 
     def register_agent(self, a_name, a_type):
         description = AgentDescription()
@@ -44,7 +44,7 @@ class LongTermAgentClient(object):
             resp1 = self.register_agent_proxy(description)
             return resp1.assigned_name
         except rospy.ServiceException as e:
-            print("Service call failed: {}".format(e))
+            rospy.logerr("Service call failed: {}".format(e))
             return False
 
     def unregister_agent(self, a_name):
@@ -52,7 +52,7 @@ class LongTermAgentClient(object):
             resp1 = self.unregister_agent_proxy(a_name)
             return resp1.success
         except rospy.ServiceException as e:
-            print("Service call failed: {}".format(e))
+            rospy.logerr("Service call failed: {}".format(e))
             return False
 
     def get_agents(self):
@@ -60,7 +60,7 @@ class LongTermAgentClient(object):
             resp1 = self.get_agents_proxy()
             return resp1.agents
         except rospy.ServiceException as e:
-            print("Service call failed: {}".format(e))
+            rospy.logerr("Service call failed: {}".format(e))
             return []
 
 
@@ -72,9 +72,9 @@ class TaskActionServer(object):
     def __init__(self):
         # load params for this robot/client into dict
         self.client_params = rospy.get_param('/client_params')
-        print(self.client_params)
+        rospy.loginfo(self.client_params)
 
-        print('Action Server Init')
+        rospy.loginfo('Action Server Init')
         # Active/Primary Task server
         self.feedback_sub = rospy.Subscriber(
             '~active_feedback',
@@ -94,11 +94,11 @@ class TaskActionServer(object):
             self.start_continuous_task,
             self.stop_continuous_task)
 
-        print('connecting to own action interfaces...')
+        rospy.loginfo('connecting to own action interfaces...')
         self.continuous_client = SynchronizedActionClient(
             '~continuous',
             TaskAction)
-        print('connected!')
+        rospy.loginfo('connected!')
 
         # find the workspace so we can get tasks later
         current_path = os.path.abspath(__file__)
@@ -113,11 +113,12 @@ class TaskActionServer(object):
         def t_main(s, q):
             try:
                 retval = func(stop_event, args, self.client_params)
-                print("Task return value: {}".format(retval))
+                rospy.loginfo("Task return value: {}".format(retval))
                 q.put((True, retval))
-            except BaseException:
+            except BaseException as e:
                 # If ANY exception fires, assume failure.
                 # Task mains should catch non-critical exception internally
+                rospy.logerr('TASK EXCEPTION: {}'.format(e))
                 q.put((False, None))
 
         task_thread = threading.Thread(
@@ -174,8 +175,8 @@ class TaskActionServer(object):
 
         for t in required_tasks:
             if t not in running_tasks:
-                print('{} not in running tasks'.format(t))
-                print('running tasks are: {}'.format(running_tasks))
+                rospy.logwarn('{} not in running tasks'.format(t))
+                rospy.logwarn('running tasks are: {}'.format(running_tasks))
                 package_name, launchfile_name = t.split('/')
                 dep_task = TaskGoal(
                     workspace_name='',
@@ -203,7 +204,7 @@ class TaskActionServer(object):
 
     def continuous_task_entry(self, gh):
         success = True
-        print('Incoming Continuous Task...')
+        rospy.loginfo('Incoming Continuous Task...')
         feedback = TaskFeedback(status='Continuous Task Ping')
         gh.set_accepted()
         goal = gh.get_goal()
@@ -223,8 +224,8 @@ class TaskActionServer(object):
             task_script = importlib.import_module('{}.{}'.format(*task_name))
         # Continuous tasks may not have a script component
         except ImportError as e:
-            rospy.logdebug('task script not loaded because:')
-            rospy.logdebug(e)
+            rospy.logwarn('task script not loaded because:')
+            rospy.logwarn(e)
             has_script = False
 
         success = True
@@ -307,7 +308,7 @@ class TaskActionServer(object):
             gh.set_aborted(text='task failure')
 
     def execute_cb(self, goal):
-        print('New Task Received')
+        rospy.loginfo('New Task Received')
         r = rospy.Rate(10)
         stopEvent = threading.Event()
         queue = Queue.Queue()
@@ -326,11 +327,11 @@ class TaskActionServer(object):
         except AttributeError:
             required_tasks = []
 
-        print('Required Dependencies: {}'.format(required_tasks))
+        rospy.loginfo('Required Dependencies: {}'.format(required_tasks))
         for x in required_tasks:
             if x not in running_tasks:
-                print('{} not in running tasks'.format(x))
-                print('running tasks are: {}'.format(running_tasks))
+                rospy.loginfo('{} not in running tasks'.format(x))
+                rospy.loginfo('running tasks are: {}'.format(running_tasks))
                 package_name, launchfile_name = x.split('/')
                 dep_task = Task(
                     workspace_name='',
