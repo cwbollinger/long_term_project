@@ -7,132 +7,111 @@ from long_term_deployment.msg import AgentDescription, Task
 from long_term_deployment.srv import GetRegisteredAgents, QueueTask, QueueTaskList, AgentStatusList
 
 
-def draw_menu(stdscr):
-    global agents_proxy
-    global queued_tasks_proxy
-    global active_tasks_proxy
-    global queue_active_task_proxy
-    global start_continuous_task_proxy
+class TerminalInterface(object):
 
-    curses.raw()
-    curses.cbreak()
-    stdscr.nodelay(True)
+    def __init__(self):
+        rospy.wait_for_service('/task_server/get_agents')
+        self.agents_proxy = rospy.ServiceProxy('/task_server/get_agents', GetRegisteredAgents)
+        rospy.wait_for_service('/task_server/get_queued_tasks')
+        self.queued_tasks_proxy = rospy.ServiceProxy('/task_server/get_queued_tasks', QueueTaskList)
+        rospy.wait_for_service('/task_server/get_agents_status')
+        self.active_tasks_proxy = rospy.ServiceProxy('/task_server/get_agents_status', AgentStatusList)
+        rospy.wait_for_service('/task_server/queue_task')
+        self.queue_active_task_proxy = rospy.ServiceProxy('/task_server/queue_task', QueueTask)
+        rospy.wait_for_service('/task_server/start_continuous_task')
+        self.start_continuous_task_proxy = rospy.ServiceProxy('/task_server/start_continuous_task', QueueTask)
+        rospy.wait_for_service('/task_server/stop_continuous_task')
+        self.stop_continuous_task_proxy = rospy.ServiceProxy('/task_server/stop_continuous_task', QueueTask)
 
-    k = 0
-
-    # Clear and refresh the screen for a blank canvas
-    stdscr.clear()
-    stdscr.refresh()
-
-    # Start colors in curses
-    curses.start_color()
-    curses.init_pair(1, curses.COLOR_CYAN, curses.COLOR_BLACK)
-    curses.init_pair(2, curses.COLOR_RED, curses.COLOR_BLACK)
-    curses.init_pair(3, curses.COLOR_BLACK, curses.COLOR_WHITE)
-
-    # Loop where k is the last character pressed
-    r = rospy.Rate(10)
-    num = None
-    while k != ord('q') and not rospy.is_shutdown():
-        tmp = stdscr.getch()  # non blocking now
-        if tmp != -1:
-            k = tmp
-            # convert to numeric
-            num = k - 48
-
-        # Initialization
-        stdscr.clear()
-        height, width = stdscr.getmaxyx()
-
-        agents = [a.agent_name for a in agents_proxy().agents]
-        queued_tasks = ['{}/{}'.format(t.package_name, t.launchfile_name)
-                        for t in queued_tasks_proxy().tasks]
-        agent_tasks = {}
-        for a in active_tasks_proxy().agent_statuses:
-            agent_tasks[a.agent.agent_name] = {
-                'active_task': a.active_task.launchfile_name,
-                'background_tasks': [t.launchfile_name for t in a.background_tasks],
-            }
-
-        if num == 0:
-            queue_active_task_proxy(Task(
+    def process_input(self, key):
+        if key == '0':
+            self.queue_active_task_proxy(Task(
                 '',
                 'long_term_deployment',
                 'test_task',
                 ['5'],
                 False), AgentDescription('erratic', 'erratic'))
-        elif num == 1:
-            start_continuous_task_proxy(Task(
+        elif key == '1':
+            self.start_continuous_task_proxy(Task(
                 '',
                 'navigation_tasks',
                 'navigate_on_map',
                 ['graf'],
                 True), AgentDescription('erratic', 'erratic'))
-        elif num == 2:
-            stop_continuous_task_proxy(Task(
+        elif key == '2':
+            self.stop_continuous_task_proxy(Task(
                 '',
                 'navigation_tasks',
                 'navigate_on_map',
                 ['graf'],
                 True), AgentDescription('erratic', 'erratic'))
-        elif num == 3:
-            start_continuous_task_proxy(Task(
+        elif key == '3':
+            self.start_continuous_task_proxy(Task(
                 '',
                 'navigation_tasks',
                 'build_new_map',
                 ['new_maze'],
                 False), AgentDescription('erratic', 'erratic'))
-        elif num == 4:
-            stop_continuous_task_proxy(Task(
+        elif key == '4':
+            self.stop_continuous_task_proxy(Task(
                 '',
                 'navigation_tasks',
                 'build_new_map',
                 ['new_maze'],
                 False), AgentDescription('erratic', 'erratic'))
-        elif num == 5:
-            start_continuous_task_proxy(Task(
+        elif key == '5':
+            self.start_continuous_task_proxy(Task(
                 '',
                 'navigation_tasks',
                 'explore_map',
                 [],
                 True), AgentDescription('erratic', 'erratic'))
-        elif num == 6:
-            stop_continuous_task_proxy(Task(
+        elif key == '6':
+            self.stop_continuous_task_proxy(Task(
                 '',
                 'navigation_tasks',
                 'explore_map',
                 [],
                 False), AgentDescription('erratic', 'erratic'))
-        elif num == 7:
-            queue_active_task_proxy(Task(
+        elif key == '7':
+            self.queue_active_task_proxy(Task(
                 '',
                 'navigation_tasks',
                 'go_to_pose',
                 ['5.0', '5.0', '0.0'],
                 False), AgentDescription('erratic', 'erratic'))
-        elif num == 8:
-            queue_active_task_proxy(Task(
+        elif key == '8':
+            self.queue_active_task_proxy(Task(
                 '',
                 'navigation_tasks',
                 'go_to_pose',
                 ['2.0', '2.0', '0.0'],
                 False), AgentDescription('erratic', 'erratic'))
-        elif num == 9:
-            start_continuous_task_proxy(Task(
+        elif key == '9':
+            self.start_continuous_task_proxy(Task(
                 '',
                 'monitoring_tasks',
                 'record_wifi',
                 ['test_file'],
                 False), AgentDescription('erratic', 'erratic'))
-        elif num == -1:
-            stop_continuous_task_proxy(Task(
+        elif key == '/':
+            self.stop_continuous_task_proxy(Task(
                 '',
                 'monitoring_tasks',
                 'record_wifi',
                 ['test_file'],
                 False), AgentDescription('erratic', 'erratic'))
+        elif key == 'z':
+            self.start_continuous_task_proxy(Task(
+                '',
+                'long_term_deployment',
+                'schedule_executor',
+                [],
+                True), AgentDescription('erratic', 'erratic'))
 
-        num = None
+    def update_screen(self, stdscr):
+        stdscr.clear()
+        height, width = stdscr.getmaxyx()
 
         # Declaration of strings
         statusbarstr = "Press 'q' to exit | STATUS BAR"
@@ -161,18 +140,18 @@ def draw_menu(stdscr):
         stdscr.addstr(1, 41, 'Continuous tasks')
         stdscr.addstr(1, 68, 'Task Queue')
 
-        for i, agent in enumerate(agents):
+        for i, agent in enumerate(self.agents):
             stdscr.addstr(i + 3, 2, agent)
 
-            active_task = agent_tasks[agent]['active_task']
+            active_task = self.agent_tasks[agent]['active_task']
             if active_task is None:
                 stdscr.addstr(i + 3, 22, 'Inactive')
             else:
                 stdscr.addstr(i + 3, 22, active_task)
 
-            stdscr.addstr(i + 3, 41, str(agent_tasks[agent]['background_tasks']))
+            stdscr.addstr(i + 3, 41, str(self.agent_tasks[agent]['background_tasks']))
 
-        for i, task in enumerate(queued_tasks):
+        for i, task in enumerate(self.queued_tasks):
             stdscr.addstr(i + 3, 62, task)
 
         # Rendering some text
@@ -187,28 +166,52 @@ def draw_menu(stdscr):
 
         # Refresh the screen
         stdscr.refresh()
-        r.sleep()
 
 
-def main():
-    curses.wrapper(draw_menu)
+    def draw_menu(self, stdscr):
+        curses.raw()
+        curses.cbreak()
+        stdscr.nodelay(True)
+    
+        # Clear and refresh the screen for a blank canvas
+        stdscr.clear()
+        stdscr.refresh()
+    
+        # Start colors in curses
+        curses.start_color()
+        curses.init_pair(1, curses.COLOR_CYAN, curses.COLOR_BLACK)
+        curses.init_pair(2, curses.COLOR_RED, curses.COLOR_BLACK)
+        curses.init_pair(3, curses.COLOR_BLACK, curses.COLOR_WHITE)
+    
+        # Loop where k is the last character pressed
+        k = None
+        r = rospy.Rate(10)
+        while k != 'q' and not rospy.is_shutdown():
+            k = None
+            tmp = stdscr.getch()  # non blocking now
+            if tmp != -1:
+                k = chr(tmp)
+    
+            # Initialization
+            self.agents = [a.agent_name for a in self.agents_proxy().agents]
+            self.queued_tasks = ['{}/{}'.format(t.package_name, t.launchfile_name)
+                            for t in self.queued_tasks_proxy().tasks]
+            self.agent_tasks = {}
+            for a in self.active_tasks_proxy().agent_statuses:
+                self.agent_tasks[a.agent.agent_name] = {
+                    'active_task': a.active_task.launchfile_name,
+                    'background_tasks': [t.launchfile_name for t in a.background_tasks],
+                }
+    
+            self.process_input(k)
+    
+            self.update_screen(stdscr)
+            r.sleep()
 
 
 if __name__ == '__main__':
     rospy.init_node('server_terminal')
-    rospy.wait_for_service('/task_server/get_agents')
-    agents_proxy = rospy.ServiceProxy('/task_server/get_agents', GetRegisteredAgents)
-    rospy.wait_for_service('/task_server/get_queued_tasks')
-    queued_tasks_proxy = rospy.ServiceProxy('/task_server/get_queued_tasks', QueueTaskList)
-    rospy.wait_for_service('/task_server/get_agents_status')
-    active_tasks_proxy = rospy.ServiceProxy('/task_server/get_agents_status', AgentStatusList)
-    rospy.wait_for_service('/task_server/queue_task')
-    queue_active_task_proxy = rospy.ServiceProxy('/task_server/queue_task', QueueTask)
-    rospy.wait_for_service('/task_server/start_continuous_task')
-    start_continuous_task_proxy = rospy.ServiceProxy('/task_server/start_continuous_task', QueueTask)
-    rospy.wait_for_service('/task_server/stop_continuous_task')
-    stop_continuous_task_proxy = rospy.ServiceProxy('/task_server/stop_continuous_task', QueueTask)
-
-    main()
+    node = TerminalInterface()
+    curses.wrapper(node.draw_menu)
 
 # self.s1 = rospy.Service('{}/register_agent'.format(name), RegisterAgent, self.handle_register_agent)
