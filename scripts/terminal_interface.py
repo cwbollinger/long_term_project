@@ -37,14 +37,14 @@ class TerminalInterface(object):
                 'navigation_tasks',
                 'navigate_on_map',
                 ['graf'],
-                True), AgentDescription('erratic', 'erratic'))
+                False), AgentDescription('erratic', 'erratic'))
         elif key == '2':
             self.stop_continuous_task_proxy(Task(
                 '',
                 'navigation_tasks',
                 'navigate_on_map',
                 ['graf'],
-                True), AgentDescription('erratic', 'erratic'))
+                False), AgentDescription('erratic', 'erratic'))
         elif key == '3':
             self.start_continuous_task_proxy(Task(
                 '',
@@ -107,7 +107,7 @@ class TerminalInterface(object):
                 'long_term_deployment',
                 'schedule_executor',
                 [],
-                True), AgentDescription('erratic', 'erratic'))
+                False), AgentDescription('erratic', 'erratic'))
 
     def update_screen(self, stdscr):
         stdscr.clear()

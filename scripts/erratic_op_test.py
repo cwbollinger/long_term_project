@@ -32,16 +32,16 @@ if __name__ == '__main__':
     start_home.estimated_duration = rospy.Duration(5.0)
 
     t1 = ConstrainedTask()
-    t1.location.position.x = 1.0
-    t1.location.position.y = 5.0
+    t1.location.position.x = 5.0
+    t1.location.position.y = 1.0
     t1.task = test_task
     t1.start_after = curr_time + one_min
     t1.finish_before = curr_time + 2 * one_min
     t1.estimated_duration = rospy.Duration(5.0)
 
     t2 = ConstrainedTask()
-    t2.location.position.x = 2.0
-    t2.location.position.y = 7.0
+    t2.location.position.x = 1.0
+    t2.location.position.y = 5.0
     t2.task = test_task
     t2.start_after = curr_time + 2 * one_min
     t2.finish_before = curr_time + 3 * one_min
@@ -63,7 +63,7 @@ if __name__ == '__main__':
     go_home.finish_before = curr_time + 5 * one_min
     go_home.estimated_duration = rospy.Duration(5.0)
     
-    tasks = [t1, t2, t3]
+    tasks = [start_home, t1, t2, t3, go_home]
 
     for task in tasks:
         schedule_task(task)
@@ -72,7 +72,10 @@ if __name__ == '__main__':
     print('Schedule received:')
     print(result)
     print(type(result))
-    assign_schedule(result)
+    print('sending schedule in 5 seconds...')
+    rospy.sleep(5)
+    print('sending now!')
+    assign_schedule(schedule=result.schedule)
 
     #r = rospy.Rate(1)
     #while not rospy.is_shutdown():
