@@ -68,6 +68,7 @@ add_service_files(
   ScheduleTask.srv
   GetSchedule.srv
   AssignSchedule.srv
+  GetPathLength.srv
   QueueTask.srv
   QueueTaskList.srv
   AgentStatusList.srv

@@ -5,6 +5,7 @@ import signal
 import subprocess
 import importlib
 import base64
+import traceback
 
 import rospy
 from long_term_deployment.msg import AgentDescription, Task, TaskGoal, TaskFeedback, TaskResult, TaskAction
@@ -106,7 +107,7 @@ class TaskActionServer(object):
         ws_name = current_path.split('src/')[0]
         self.ws_name = ws_name[:-1]
 
-    def start_task_thread(self, task_script, args, stop_event, result_queue):
+    def start_task_thread(self, task_name, task_script, args, stop_event, result_queue):
         func = getattr(task_script, 'main')
 
         # make the main() in each task less nasty
@@ -118,7 +119,8 @@ class TaskActionServer(object):
             except BaseException as e:
                 # If ANY exception fires, assume failure.
                 # Task mains should catch non-critical exception internally
-                rospy.logerr('TASK EXCEPTION: {}'.format(e))
+                rospy.logerr( 'Exception in task {}: {}'.format(task_name, e))
+                rospy.logerr(traceback.format_exc())
                 q.put((False, None))
 
         task_thread = threading.Thread(
@@ -224,7 +226,7 @@ class TaskActionServer(object):
             task_script = importlib.import_module('{}.{}'.format(*task_name))
         # Continuous tasks may not have a script component
         except ImportError as e:
-            rospy.logwarn('task script not loaded because:')
+            rospy.logwarn('task script for {} not loaded because:'.format(t.launchfile_name))
             rospy.logwarn(e)
             has_script = False
 
@@ -232,6 +234,7 @@ class TaskActionServer(object):
 
         if has_script:
             task_thread = self.start_task_thread(
+                t.launchfile_name,
                 task_script,
                 t.args,
                 stopEvent,
@@ -348,6 +351,7 @@ class TaskActionServer(object):
         success = True
 
         task_thread = self.start_task_thread(
+            t.launchfile_name,
             task_script,
             t.args,
             stopEvent,
