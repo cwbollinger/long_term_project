@@ -2,4 +2,4 @@ geometry_msgs/PoseStamped start
 geometry_msgs/PoseStamped goal
 float32 tolerance
 ---
-uint32 length
+float32 length

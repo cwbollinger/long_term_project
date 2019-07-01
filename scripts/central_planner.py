@@ -55,10 +55,10 @@ class CentralPlanner(object):
         return GetScheduleResponse(schedule)
 
     def get_path_lengths_for_agent(self, agent_name):
-        srv_name = '/{}/get_path_length'.format(agent_name)
+        srv_name = '/{}_agent/get_path_length'.format(agent_name)
         get_path_len = rospy.ServiceProxy(srv_name, GetPathLength)
         locations = [t.location for t in self.tasks]
-        distances = np.ones((len(locations), len(locations)))
+        distances = np.ones((len(locations), len(locations)), dtype=np.float64)
         start = PoseStamped()
         start.header.frame_id = 'map'
         start.pose.position.x = 2.0
@@ -77,7 +77,8 @@ class CentralPlanner(object):
                     end_pose = (end.pose.position.x, end.pose.position.y)
 
                     rospy.loginfo('Getting distance from {} to {} '.format(start_pose, end_pose))
-                    distances[i, j] = get_path_len(start, end, 0.2)
+                    result = get_path_len(start, end, 0.2)
+                    distances[i, j] = result.length
                     rospy.loginfo('Distance: {}'.format(distances[i, j]))
                     
                 except rospy.ServiceException as e:
