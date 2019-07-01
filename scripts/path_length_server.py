@@ -20,6 +20,7 @@ class PathLengthServer(object):
     def length_service_cb(self, msg):
         path = self.path_srv(msg.start, msg.goal, msg.tolerance)
         length = self.get_path_length(path)
+        rospy.logwarn('Path Length: {}'.format(length))
         return GetPathLengthResponse(length)
 
     def get_path_length(self, path):

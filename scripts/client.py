@@ -163,31 +163,6 @@ class TaskActionServer(object):
         return (task.package_name, task.launchfile_name)
 
     def start_continuous_task(self, gh):
-        task_name = self.taskname_from_gh(gh)
-        running_tasks = ['{}/{}'.format(*task_name)
-                         for gh in self._as_continuous.goals.values()]
-        # get the list of required tasks from the script file
-        try:
-            task_script = importlib.import_module('{}.{}'.format(*task_name))
-            required_tasks = getattr(task_script, 'required_tasks')
-        except ImportError:
-            required_tasks = []
-        except AttributeError:
-            required_tasks = []
-
-        for t in required_tasks:
-            if t not in running_tasks:
-                rospy.logwarn('{} not in running tasks'.format(t))
-                rospy.logwarn('running tasks are: {}'.format(running_tasks))
-                package_name, launchfile_name = t.split('/')
-                dep_task = TaskGoal(
-                    workspace_name='',
-                    package_name=package_name,
-                    launchfile_name=launchfile_name,
-                    args=[],
-                    debug=True)
-                self.continuous_client.send_goal(dep_task)
-                rospy.sleep(1)  # TODO: something better here...
 
         with self.continuous_lock:
             task_thread = threading.Thread(
@@ -205,14 +180,51 @@ class TaskActionServer(object):
                 rospy.logwarn(warnmsg.format(goal_id.id))
 
     def continuous_task_entry(self, gh):
-        success = True
-        rospy.loginfo('Incoming Continuous Task...')
-        feedback = TaskFeedback(status='Continuous Task Ping')
+        # if accept is not done before launching dependency tasks
+        # they will never start because the currently processing goal
+        # (this task) is still in limbo
         gh.set_accepted()
+
+        # get the list of required tasks from the script file
+        task_name = self.taskname_from_gh(gh)
+        rospy.loginfo('Continuous Task {}'.format(task_name))
+        running_tasks = ['{}/{}'.format(*task_name)
+                         for gh in self._as_continuous.goals.values()]
+        task_name = self.taskname_from_gh(gh)
+
+        try:
+            task_script = importlib.import_module('{}.{}'.format(*task_name))
+            required_tasks = getattr(task_script, 'required_tasks')
+        except ImportError:
+            required_tasks = {}
+        except AttributeError:
+            required_tasks = {}
+
+        for taskname in required_tasks.keys():
+            if taskname not in running_tasks:
+                rospy.logwarn('{} not in running tasks'.format(taskname))
+                rospy.logwarn('running tasks are: {}'.format(running_tasks))
+                package_name, launchfile_name = taskname.split('/')
+                dep_task = Task(
+                    workspace_name='',
+                    package_name=package_name,
+                    launchfile_name=launchfile_name,
+                    args=required_tasks[taskname],
+                    debug=False)
+                cgh = self.continuous_client.send_goal(TaskGoal(dep_task))
+
+                while cgh.get_goal_status() != GoalStatus.ACTIVE:
+                    rospy.loginfo('waiting for dependency {} to spin up...'.format(taskname))
+                    rospy.loginfo('Task Status: {}'.format(cgh.get_goal_status_text()))
+                    rospy.sleep(0.5)
+
+        rospy.loginfo('Starting {} Background Thread...'.format(task_name))
+        feedback = TaskFeedback(status='Continuous Task Ping')
         goal = gh.get_goal()
         gh.publish_feedback(feedback)
 
         t = goal.task
+        rospy.loginfo('starting {} launchfile...'.format(task_name))
         p, devnull = self.start_task_launchfile(t)
 
         r = rospy.Rate(10)
@@ -345,6 +357,7 @@ class TaskActionServer(object):
                 self.continuous_client.send_goal(TaskGoal(dep_task))
                 rospy.sleep(1)  # TODO: something better here...
 
+        rospy.loginfo('starting active task launchfile...')
         p, devnull = self.start_task_launchfile(t)
 
         self._feedback.status = 'Starting...'

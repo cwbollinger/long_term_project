@@ -67,6 +67,7 @@ class SynchronizedActionClient(object):
             feedback_cb=feedback_cb)
 
         self.goals.append(gh)
+        return gh
 
     def get_gh_from_task(self, task):
         for gh in self.goals:
@@ -166,11 +167,11 @@ class SynchronizedSimpleActionClient(object):
             GetTaskFromID)
 
     def send_goal(self, goal, done_cb=None, active_cb=None, feedback_cb=None):
-        self.client.send_goal(
-            goal,
-            done_cb=done_cb,
-            active_cb=active_cb,
-            feedback_cb=feedback_cb)
+        return self.client.send_goal(
+                goal,
+                done_cb=done_cb,
+                active_cb=active_cb,
+                feedback_cb=feedback_cb)
 
     def get_state(self):
         if self.client.gh is None:

@@ -7,7 +7,7 @@ from actionlib_msgs.msg import GoalStatus
 
 from long_term_deployment.synchronized_actions import SynchronizedSimpleActionClient
 from long_term_deployment.msg import Task, TaskGoal, TaskAction
-from long_term_deployment.srv import AssignSchedule
+from long_term_deployment.srv import AssignSchedule, GetPathLength
 
 from actionlib_msgs.msg import GoalStatus
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
@@ -15,10 +15,13 @@ from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from rosduct.srv import ROSDuctConnection
 from tf.transformations import quaternion_from_euler, euler_from_quaternion
 
+
 def heading(q):
     e_angles = euler_from_quaternion([q.w, q.x, q.y, q.z])
     return e_angles[2]
 
+
+required_tasks = {'navigation_tasks/navigate_on_map': ['graf']}
 
 class ScheduleExecutor(object):
 
@@ -99,7 +102,11 @@ def main(stop_event, args, client_params):
     expose_local_service = rospy.ServiceProxy('/rosduct/expose_local_service', ROSDuctConnection)
     expose_local_service(conn_name='/robot_client/set_schedule',
                          conn_type='long_term_deployment/AssignSchedule',
-                         alias_name='/{}/set_schedule'.format(agent_name))
+                         alias_name='/{}_agent/set_schedule'.format(agent_name))
+
+    expose_local_service(conn_name='/get_path_length',
+                         conn_type='long_term_deployment/GetPathLength',
+                         alias_name='/{}_agent/get_path_length'.format(agent_name))
 
     r = rospy.Rate(1)
     while not stop_event.isSet():
