@@ -107,7 +107,7 @@ class TaskActionServer(object):
         ws_name = current_path.split('src/')[0]
         self.ws_name = ws_name[:-1]
 
-    def start_task_thread(self, task_name, task_script, args, stop_event, result_queue):
+    def start_task_thread(self, lf_handle, task_name, task_script, args, stop_event, result_queue):
         func = getattr(task_script, 'main')
 
         # make the main() in each task less nasty
@@ -121,6 +121,7 @@ class TaskActionServer(object):
                 # Task mains should catch non-critical exception internally
                 rospy.logerr( 'Exception in task {}: {}'.format(task_name, e))
                 rospy.logerr(traceback.format_exc())
+                self.stop_task_launchfile(lf_handle)
                 q.put((False, None))
 
         task_thread = threading.Thread(
@@ -151,6 +152,24 @@ class TaskActionServer(object):
         rospy.logwarn('Launchfile Command Args: {}'.format(cmdlist))
         p = subprocess.Popen(cmdlist, stdout=devnull, stderr=devnull)
         return p, devnull
+
+    def stop_task_launchfile(self, launchfile_handle):
+        proc, outstream = launchfile_handle
+        if proc.poll() is None:  # launchfile hasn't closed yet
+            rospy.logdebug('shutting down launch file')
+            proc.send_signal(signal.SIGINT)  # some processes need this
+            for i in range(10):  # give it 10 seconds to close cleanly
+                if proc.poll() is None:
+                    rospy.sleep(1)
+                else:
+                    break
+
+        if proc.poll() is None:  # launchfile STILL hasn't closed yet
+            rospy.logwarn('shutting down launch file, KILL required')
+            proc.kill()  # for real this time
+
+        if outstream:
+            outstream.close()
 
     def update_active_feedback(self, msg):
         """ update feedback message and immediately send it."""
@@ -188,16 +207,18 @@ class TaskActionServer(object):
         # get the list of required tasks from the script file
         task_name = self.taskname_from_gh(gh)
         rospy.loginfo('Continuous Task {}'.format(task_name))
-        running_tasks = ['{}/{}'.format(*task_name)
-                         for gh in self._as_continuous.goals.values()]
-        task_name = self.taskname_from_gh(gh)
+
+        running_tasks = ['{}/{}'.format(*self.taskname_from_gh(running_gh))
+                         for running_gh in self._as_continuous.goals.values()]
 
         try:
             task_script = importlib.import_module('{}.{}'.format(*task_name))
             required_tasks = getattr(task_script, 'required_tasks')
+            required_tasks.keys() # make sure it's a dict
         except ImportError:
             required_tasks = {}
         except AttributeError:
+            rospy.loginfo('required_tasks undefined or not a dictionary')
             required_tasks = {}
 
         for taskname in required_tasks.keys():
@@ -225,7 +246,7 @@ class TaskActionServer(object):
 
         t = goal.task
         rospy.loginfo('starting {} launchfile...'.format(task_name))
-        p, devnull = self.start_task_launchfile(t)
+        launchfile_handle = self.start_task_launchfile(t)
 
         r = rospy.Rate(10)
         feedback.status = 'Starting Continuous Task...'
@@ -246,6 +267,7 @@ class TaskActionServer(object):
 
         if has_script:
             task_thread = self.start_task_thread(
+                launchfile_handle,
                 t.launchfile_name,
                 task_script,
                 t.args,
@@ -274,24 +296,10 @@ class TaskActionServer(object):
                         break
 
                     # if launchfile has closed itself, end
-                    if p.poll() is not None:
+                    if launchfile_handle[0].poll() is not None:
                         break
 
-        if p.poll() is None:  # launchfile hasn't closed yet
-            rospy.logdebug('shutting down launch file')
-            p.send_signal(signal.SIGINT)  # some processes need this
-            for i in range(10):  # give it 10 seconds to close cleanly
-                if p.poll() is None:
-                    rospy.sleep(1)
-                else:
-                    break
-
-        if p.poll() is None:  # launchfile STILL hasn't closed yet
-            rospy.logwarn('shutting down launch file, KILL required')
-            p.kill()  # for real this time
-
-        if devnull is not None:
-            devnull.close()
+        self.stop_task_launchfile(launchfile_handle)
 
         # TODO: what should non-script launchfiles return on success?
         if has_script and success:
@@ -358,12 +366,13 @@ class TaskActionServer(object):
                 rospy.sleep(1)  # TODO: something better here...
 
         rospy.loginfo('starting active task launchfile...')
-        p, devnull = self.start_task_launchfile(t)
+        launchfile_handle = self.start_task_launchfile(t)
 
         self._feedback.status = 'Starting...'
         success = True
 
         task_thread = self.start_task_thread(
+            launchfile_handle,
             t.launchfile_name,
             task_script,
             t.args,
@@ -382,12 +391,8 @@ class TaskActionServer(object):
                 break
             r.sleep()
 
-        # if the launchfile hasn't closed yet
-        if p.poll() is None:
-            p.kill()
-
-        if devnull:
-            devnull.close()
+        # task is done, stop dependency nodes
+        self.stop_task_launchfile(launchfile_handle)
 
         # if we didn't preempt, get the task's return state
         if success:

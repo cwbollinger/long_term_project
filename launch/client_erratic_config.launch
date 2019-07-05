@@ -3,6 +3,7 @@
   <rosparam ns="client_params">
       robot_type: 'erratic'
       vel_topic: '/cmd_vel'
+      wireless_device_id: 'wlp2s0'
   </rosparam>
 
   <rosparam ns="client_capability">

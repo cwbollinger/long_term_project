@@ -7,7 +7,7 @@ from actionlib_msgs.msg import GoalStatus
 
 from long_term_deployment.synchronized_actions import SynchronizedSimpleActionClient
 from long_term_deployment.msg import Task, TaskGoal, TaskAction
-from long_term_deployment.srv import AssignSchedule, GetPathLength
+from long_term_deployment.srv import GetSchedule, GetScheduleResponse, AssignSchedule, GetPathLength
 
 from actionlib_msgs.msg import GoalStatus
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
@@ -31,6 +31,7 @@ class ScheduleExecutor(object):
         self.curr_task_done = False
         self.curr_task_idx = 0
         self.assign_plan = rospy.Service('~set_schedule', AssignSchedule, self.set_schedule)
+        self.provide_plan = rospy.Service('~get_schedule', GetSchedule, self.get_schedule)
         rospy.loginfo('Connecting to local action client...')
         self.active_client = SynchronizedSimpleActionClient(
                 '~active',
@@ -43,6 +44,9 @@ class ScheduleExecutor(object):
         self.pose_reached = False
         self.curr_task_done = False
         self.curr_task_idx = 0
+
+    def get_schedule(self, msg):
+        return GetScheduleResponse(self.schedule)
 
     def pose_reached_cb(self, term_state, result):
         self.pose_reached = True
@@ -100,9 +104,14 @@ def main(stop_event, args, client_params):
     executor = ScheduleExecutor()
     agent_name = rospy.get_param('~agent_name', 'default')
     expose_local_service = rospy.ServiceProxy('/rosduct/expose_local_service', ROSDuctConnection)
+
     expose_local_service(conn_name='/robot_client/set_schedule',
                          conn_type='long_term_deployment/AssignSchedule',
                          alias_name='/{}_agent/set_schedule'.format(agent_name))
+
+    expose_local_service(conn_name='/robot_client/get_schedule',
+                         conn_type='long_term_deployment/GetSchedule',
+                         alias_name='/{}_agent/get_schedule'.format(agent_name))
 
     expose_local_service(conn_name='/get_path_length',
                          conn_type='long_term_deployment/GetPathLength',
