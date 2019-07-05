@@ -56,11 +56,11 @@ def main(stop_event, args, client_params):
     agent_name = rospy.get_param('~agent_name', 'default')
     expose_local_service(conn_name='/move_base/make_plan',
                          conn_type='nav_msgs/GetPlan',
-                         alias_name='/{}/move_base/make_plan'.format(agent_name))
+                         alias_name='/{}_agent/move_base/make_plan'.format(agent_name))
 
     expose_local_topic(conn_name='/robot_pose',
                  conn_type='geometry_msgs/PoseStamped',
-                 alias_name='{}/robot_pose'.format(agent_name),
+                 alias_name='{}_agent/robot_pose'.format(agent_name),
                  latch=False)
 
     r = rospy.Rate(10)
@@ -83,9 +83,11 @@ def main(stop_event, args, client_params):
     close_service = rospy.ServiceProxy('/rosduct/close_remote_service', ROSDuctConnection)
     close_local_service = rospy.ServiceProxy('/rosduct/close_local_service', ROSDuctConnection)
     close_topic = rospy.ServiceProxy('/rosduct/close_remote_topic', ROSDuctConnection)
+    close_local_topic = rospy.ServiceProxy('/rosduct/close_local_topic', ROSDuctConnection)
 
     close_local_service(conn_name='/move_base/make_plan')
     close_service(conn_name='/map_manager/serve_map')
     close_topic(conn_name='/maps/{}/map_metadata'.format(map_name))
     close_topic(conn_name='/maps/{}/map'.format(map_name))
     close_service(conn_name='/maps/{}/static_map'.format(map_name))
+    close_local_topic(conn_name='/robot_pose')

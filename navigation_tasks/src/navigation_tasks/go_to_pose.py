@@ -13,7 +13,7 @@ from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from rosduct.srv import ROSDuctConnection
 from long_term_deployment.srv import RequestMap
 
-required_tasks = ['navigation_tasks/navigate_on_map']
+required_tasks = {'navigation_tasks/navigate_on_map': ['graf']}
 
 def main(stop_event, args, client_params):
     ''' Takes a threading.Event to know if preemption is needed
