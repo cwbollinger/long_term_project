@@ -27,7 +27,7 @@ class WifiNode:
         self.wifi_pub = rospy.Publisher('~/wireless', Connection, queue_size=1)
 
     def main(self):
-        r = rospy.Rate(1)
+        r = rospy.Rate(2)
         if not rospy.has_param('/use_sim_time'):
             is_sim = False
         else:
@@ -61,7 +61,8 @@ class WifiNode:
         return conn
 
     def get_wifi_status(self):
-        net_status = subprocess.check_output(['sudo', 'iwconfig', 'wlan0'])
+        wifi_id = rospy.get_param('~device_id')
+        net_status = subprocess.check_output(['sudo', 'iwconfig', wifi_id])
         fields = [x.strip() for x in net_status.split('\n')]
         conn = Connection()
         conn.header.stamp = rospy.Time.now()

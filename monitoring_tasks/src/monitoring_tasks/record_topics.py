@@ -14,7 +14,7 @@ from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from rosduct.srv import ROSDuctConnection
 from long_term_deployment.srv import RequestMap
 
-required_tasks = []
+required_tasks = {}
 
 
 def main(stop_event, args, client_params):
