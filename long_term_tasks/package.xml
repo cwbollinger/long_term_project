@@ -10,7 +10,10 @@
 
   <buildtool_depend>catkin</buildtool_depend>
 
+  <run_depend>long_term_deployment</run_depend>
   <run_depend>cardboard_detection_task</run_depend>
+  <run_depend>monitoring_tasks</run_depend>
+  <run_depend>navigation_tasks</run_depend>
 
   <export>
     <metapackage/> 
