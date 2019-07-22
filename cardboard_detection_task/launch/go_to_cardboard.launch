@@ -1,0 +1,3 @@
+<launch>
+    <node pkg="cardboard_detection_task" type="go_to_cardboard.py" name="cardboard_goto" output="screen"/>
+</launch>

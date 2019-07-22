@@ -1,0 +1,8 @@
+<!-- Launches navigation stack for the indicated static map -->
+<launch>
+    <arg name="vel_topic"/>
+    <arg name="robot_type"/>
+
+    <include file="$(find long_term_configs)/launch/$(arg robot_type)_navigation_bringup.launch" />
+    <node name="pose_publisher" pkg="navigation_tasks" type="pose_publisher.py" />
+</launch>

@@ -1,0 +1,4 @@
+sensor_msgs/CompressedImage img
+---
+float64 a
+float64 b

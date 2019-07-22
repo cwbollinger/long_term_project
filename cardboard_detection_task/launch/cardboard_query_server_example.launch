@@ -1,0 +1,7 @@
+<launch>
+  <node pkg="cardboard_detection_task" name="cardboard_query_server" type="cardboard_query_server.py">
+    <rosparam>
+    model_load_path: /~/ws/src/long_term_tasks/cardboard_detection_task/src/pretrained-models/weights/cardboard_best_ckpt.pth 
+    </rosparam>
+  </node>
+</launch>

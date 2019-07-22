@@ -1,0 +1,8 @@
+<launch>
+    <arg name="root_dir" default="$(env HOME)" />
+    <arg name="wireless_device_id" />
+    <node pkg="monitoring_tasks" name="wifi_node" type="wifi_node.py">
+      <param name="device_id" value="$(arg wireless_device_id)"/>
+    </node>
+    <node pkg="monitoring_tasks" name="rosbag_control" type="rosbag_remote_control.py" args="-m ros -i '/wireless /tf /tf_static' -f default.bag -d $(arg root_dir)/bags/ -t /rosbagctrl"/>
+</launch>
