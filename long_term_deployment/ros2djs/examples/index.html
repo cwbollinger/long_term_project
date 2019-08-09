@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <meta name="description" content="">
+        <meta name="author" content="Chris Bollinger">
+  
+        <title>Long Term Autonomy UI</title>
+  
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+        <link href="./dashboard.css" rel="stylesheet">
+    </head>
+    
+    <body>
+        <div id="app_root">
+            <nav class="navbar navbar-dark fixed-top bg-dark flex-md-nowrap p-0 shadow">
+                <a class="navbar-brand col-sm-3 col-md-2 mr-0" href="#">Graf Long Term Server</a>
+            </nav>
+            <div class="container-fluid">
+                <div class="row">
+                    <nav class="col-md-2 d-none d-md-block bg-light sidebar">
+                        <div class="sidebar-sticky">
+                            <ul class="nav flex-column">
+                                <li class="nav-item">
+                                    <a href="/examples/index.html" class="nav-link active">
+                                        <span data-feather="home"></span>
+	            						Building map
+                                    </a>
+                                    <a href="/tasks" class="nav-link">
+                                        <span data-feather="calendar"></span>
+	            						View Scheduled Tasks
+                                    </a>
+                                    <a href="/examples/schedule_task.html" class="nav-link">
+                                        <span data-feather="plus"></span>
+	            						Schedule a Task
+                                    </a>
+                                    <a href="/people" class="nav-link">
+                                        <span data-feather="users"></span>
+	            						People
+                                    </a>
+                                    <a href="/examples/robot_control.html" class="nav-link">
+                                        <span data-feather="terminal"></span>
+	            						Robots
+                                    </a>
+                                    <a href="/log_data/" class="nav-link">
+                                        <span data-feather="file-text"></span>
+	            						Data Storage
+                                    </a>
+                                    <a href="/points" class="nav-link">
+                                        <span data-feather="flag"></span>
+	            						Points of Interest
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </nav>
+  
+                    <main role="main" class="col-md-9 ml-sm-auto col-lg-10 px-4">
+                        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                            <h1 class="h2">Building Map</h1>
+                        </div>
+  
+                        <div class="my-4 w-100" id="map"></div>
+  
+                    </main>
+                </div>
+            </div>
+        </div>
+  
+        <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js"></script>
+
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+        <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+        <script src="https://static.robotwebtools.org/EaselJS/current/easeljs.js"></script>
+        <script src="https://static.robotwebtools.org/EventEmitter2/current/eventemitter2.min.js"></script>
+        <script src="https://static.robotwebtools.org/roslibjs/current/roslib.js"></script>
+        <script src="../build/ros2d.js"></script>
+        <script src="./index.js"></script>
+
+        <!-- Icons -->
+        <script src="https://unpkg.com/feather-icons/dist/feather.min.js"></script>
+        <script>
+            feather.replace();
+            init();
+        </script>
+  
+    </body>
+</html>
