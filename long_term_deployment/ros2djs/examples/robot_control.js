@@ -106,6 +106,7 @@ function start_robot_control(agent_name) {
     // hide the robot select div
     document.getElementById("robot_select").style.display = "none";
     document.getElementById("robot_status").style.display = "flex";
+    document.getElementById("command_row").style.display = "flex";
     // Create the main viewer.
     var viewer = new ROS2D.Viewer({
       divID : 'map',
@@ -128,7 +129,7 @@ function start_robot_control(agent_name) {
             if(a.active_task.package_name !== "") {
               div.children[0].textContent = a.active_task.package_name + "/" + a.active_task.launchfile_name;
             } else {
-              div.children[0].textContent = "No active task currently...";
+              div.children[0].textContent = "No active task running...";
             }
 
             // clear out the old data
@@ -139,6 +140,11 @@ function start_robot_control(agent_name) {
             for(let t of a.background_tasks) {
               let li = document.createElement("li");
               li.appendChild(document.createTextNode(t.package_name + "/" + t.launchfile_name));
+              ul.appendChild(li);
+            }
+            if(a.background_tasks.length == 0) {
+              let li = document.createElement("li");
+              li.appendChild(document.createTextNode("No background tasks running..."));
               ul.appendChild(li);
             }
           }
@@ -162,7 +168,7 @@ function start_robot_control(agent_name) {
       ros : window.ros,
       rootObject : viewer.scene,
       topic: '/maps/graf/map',
-      // Use this property in case of continuous updates			
+      // Use this property in case of continuous updates
       continuous: true
     });
     window.gridClient = gridClient;
@@ -192,7 +198,39 @@ function start_robot_control(agent_name) {
 }
 
 
+function redraw_args(num_args) {
+  let old_args = document.getElementById("arg_holder");
+  let args = old_args.cloneNode(false);
+  old_args.parentNode.replaceChild(args, old_args);
+  console.log("Hello!");
+  for(let i=0; i < num_args; i++) {
+    let input = document.createElement("input");
+    input.id = "task_arg"+(i+1);
+    input.classList.add("form-control");
+    input.classList.add("task_arg");
+    input.placeholder = "(optional) argument #"+(i+1);
+    args.appendChild(input);
+  }
+}
+
 function init() {
+  // setup some callbacks first
+  let add_arg_btn = document.getElementById("add_args");
+  let rem_arg_btn = document.getElementById("rem_args");
+  var num_args = 0;
+  add_arg_btn.onclick = function(evt) {
+    num_args++;
+    redraw_args(num_args);
+  }
+
+  rem_arg_btn.onclick = function(evt) {
+    num_args--;
+    redraw_args(num_args);
+    if(num_args < 0) {
+      num_args = 0;
+    }
+  }
+
   // Connect to ROS.
   var ros = new ROSLIB.Ros({
     url : 'ws://olorin.engr.oregonstate.edu:9090'
@@ -215,5 +253,6 @@ function init() {
       robot_list.appendChild(li);
     }
   });
+
 
 }
