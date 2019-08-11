@@ -103,6 +103,7 @@ function handleClick(evt) {
 
 function start_robot_control(agent_name) {
   function func(mouse_event) {
+    window.activeRobot = agent_name;
     // hide the robot select div
     document.getElementById("robot_select").style.display = "none";
     document.getElementById("robot_status").style.display = "flex";
@@ -217,6 +218,7 @@ function init() {
   // setup some callbacks first
   let add_arg_btn = document.getElementById("add_args");
   let rem_arg_btn = document.getElementById("rem_args");
+  let send_task_btn = document.getElementById("send_task");
   var num_args = 0;
   add_arg_btn.onclick = function(evt) {
     num_args++;
@@ -229,6 +231,61 @@ function init() {
     if(num_args < 0) {
       num_args = 0;
     }
+  }
+
+  send_task_btn.onclick = function(evt) {
+    evt.preventDefault();
+
+    console.log("sending task to " + window.activeRobot);
+
+    let active_task_srv = new ROSLIB.Service({
+      ros : ros,
+      name : '/task_server/queue_task',
+      serviceType : '/long_term_deployment/QueueTask'
+    });
+
+    let background_task_srv = new ROSLIB.Service({
+      ros : ros,
+      name : '/task_server/start_continuous_task',
+      serviceType : '/long_term_deployment/QueueTask'
+    });
+
+    let agent_description = {
+      agent_name: window.activeRobot,
+      agent_type: window.activeRobot
+    };
+
+    var requested_task = new ROSLIB.ServiceRequest({
+      task: {
+        workspace_name : '',
+        package_name : document.getElementById("pkgname").value,
+        launchfile_name : document.getElementById("taskname").value,
+        args : [],
+        debug : false
+      },
+      agent: agent_description
+    });
+
+    // get the task arguments
+    let elements = document.getElementById('arg_holder').childNodes;
+    for(let i = 0; i < elements.length; i++) {
+      requested_task.task.args.push(elements[i].value);
+    }
+
+    console.log(requested_task);
+    console.log("number of args: " + elements.length);
+    console.log(requested_task.task.args);
+
+    let task_srv = null;
+    if(document.getElementById("tasktype").value === "background") {
+      task_srv = background_task_srv;
+    } else {
+      task_srv = active_task_srv;
+    }
+
+    task_srv.callService(requested_task, function(result) {
+      console.log('Task Submission Result: '+ result.success);
+    });
   }
 
   // Connect to ROS.
@@ -253,6 +310,5 @@ function init() {
       robot_list.appendChild(li);
     }
   });
-
 
 }

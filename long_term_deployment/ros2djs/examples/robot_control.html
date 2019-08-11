@@ -66,7 +66,10 @@
                             </ul>
                         </div>
                         <div id="robot_status" class="row" style="display: none">
-                            <div id="map" class="col-md-6"></div>
+                            <div id="map" class="col-md-6">
+                                <div id="map"></div>
+                                <div><p>Click on the map to order the robot.</p></div>
+                            </div>
                             <div id="tasks" class="col-md-6">
                                 <h3>Robot Status</h3>
                                 <h4>Active Task</h4>
@@ -83,9 +86,15 @@
                                     <form>
                                         <input class="form-control" id="pkgname" placeholder="package_name"/>
                                         <input class="form-control" id="taskname" placeholder="task_name"/>
+                                        <select class="form-control" id="tasktype">
+                                            <option value="active">Active</option>
+                                            <option value="background">Background</option>
+                                        </select>
+                                        <h4>Task Arguments (0 or more)</h4>
                                         <div id="arg_holder"></div>
                                         <button id="add_args" type="button">+</button>
                                         <button id="rem_args" type="button">-</button>
+                                        <button id="send_task" type="button">Send</button>
                                     </form>
                                 </div>
                             </div>
