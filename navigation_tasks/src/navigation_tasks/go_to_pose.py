@@ -38,6 +38,9 @@ def main(stop_event, args, client_params):
 
     status = {'finished': False, 'state': None}  # does not work with plain bool
     def finished(state, result):
+        rospy.loginfo('Action finished, result was:')
+        rospy.loginfo('{}'.format(result))
+
         status['finished'] = True
         status['state'] = state
 
