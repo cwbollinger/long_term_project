@@ -5,6 +5,8 @@
   </node>
   <node pkg="long_term_deployment" type="task_server.py" name="task_server" output="screen" required="true"/>
   <node pkg="long_term_deployment" type="central_planner.py" name="central_planner" output="screen" required="true"/>
+  <node pkg="long_term_deployment" type="web_interface.py" name="web_server" output="screen" required="true"/>
+  <node pkg="long_term_deployment" type="backup_logs.py" name="backup_manager" output="screen"/>
 
   <node pkg="long_term_deployment" type="map_manager.py" name="map_manager" output="screen"/>
   <!--

@@ -29,11 +29,28 @@ def get_map_as_im(mapfile):
     return map_data, map_extent
 
 
-if __name__ == '__main__':
-    
-    graf_map, extent = get_map_as_im(sys.argv[1])
+def find_unvisualized_logs():
+    bagdir = os.path.expanduser('~/bags')
+    visdir = os.path.expanduser('~/bags/visualization')
+    mapfile = os.path.expanduser('~/maps/graf.yaml')
 
-    bag = rosbag.Bag(sys.argv[2])
+    files = os.listdir(bagdir)
+    visfiles = os.listdir(visdir)
+
+    for f in files:
+        parts = f.split('_')
+        if parts[-1][:4] != 'wifi':
+            continue
+        visname = '{}_{}_{}_wifi_visualization.png'.format(parts[0], parts[1], parts[2])
+        if visname not in visfiles:
+            fullfile = os.path.join(bagdir, f)
+            generate_wifi_map(mapfile, fullfile, visname)
+
+
+def generate_wifi_map(mapname, bagname, outputname):
+    graf_map, extent = get_map_as_im(mapname)
+
+    bag = rosbag.Bag(bagname)
     bag_transformer = BagTfTransformer(bag)
     #print(bag_transformer.getTransformGraphInfo())
     #print(bag_transformer.getChain('map', 'base_link'))
@@ -68,20 +85,40 @@ if __name__ == '__main__':
             break
 
     # colors = sns.color_palette('muted', n_colors=3)
+    # sns.scatterplot(
+    #     x='x',
+    #     y='y',
+    #     hue='wifi',
+    #     legend=False,
+    #     data=pd.DataFrame(points),
+    #     ax=ax,
+    #     linewidth=0,
+    #     palette=sns.color_palette("RdYlGn", n_colors=len(unique_wifi_vals)))
+
     sns.scatterplot(
         x='x',
         y='y',
         hue='wifi',
+        legend='brief',
         data=pd.DataFrame(points),
         ax=ax,
         linewidth=0,
-        palette=sns.color_palette("RdYlGn", n_colors=len(unique_wifi_vals)))
+        palette="Reds_r")
 
-    # plt.scatter(*list(zip(*points)))
-    # put a blue dot at (10, 20)
-    # plt.scatter([0], [0])
+    plt.savefig(os.path.expanduser('~/bags/visualization/{}'.format(outputname)), bbox_inches='tight')
 
-    # put a red dot, size 40, at 2 locations:
-    # plt.scatter(x=[5, 2], y=[5, 0], c='r', s=40)
-    plt.show()
+
+def main():
+    while True:
+        find_unvisualized_logs()
+        time.sleep(1)
+
+
+if __name__ == '__main__':
+    main()
+    # generate_wifi_map(
+    #     os.path.expanduser('~/maps/graf.yaml'),
+    #     sys.argv[1],
+    #     'testmap.png'
+    # )
 
