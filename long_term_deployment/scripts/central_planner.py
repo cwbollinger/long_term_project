@@ -8,10 +8,10 @@ from geometry_msgs.msg import PoseStamped
 from nav_msgs.srv import GetPlan
 
 from long_term_deployment.msg import ScheduledTask
-from long_term_deployment.srv import ScheduleTask, GetSchedule, GetScheduleResponse, GetPathLength
+from long_term_deployment.srv import ScheduleTask, GetScheduledTaskList, GetScheduledTaskListResponse, GetSchedule, GetScheduleResponse, GetPathLength
 
 import subprocess
-import datetime
+from datetime import datetime
 
 
 class CentralPlanner(object):
@@ -21,12 +21,20 @@ class CentralPlanner(object):
         self.schedule_task = rospy.Service('~schedule_task',
                                            ScheduleTask, self.schedule_task)
         self.get_plan = rospy.Service('~get_schedule', GetSchedule, self.get_schedule)
+        self.get_tasks = rospy.Service('~get_scheduled_tasks', GetScheduledTaskList, self.get_scheduled_tasks)
         self.tasks = []
 
     def schedule_task(self, req):
         rospy.loginfo('Adding new task at:\n{}'.format(req.task.location.position))
+        rospy.loginfo('Should be completed between')
+        start = datetime.fromtimestamp(req.task.start_after.to_sec())
+        end = datetime.fromtimestamp(req.task.finish_before.to_sec())
+        rospy.loginfo('{} and {}'.format(start, end))
         self.tasks.append(req.task)
         return True
+
+    def get_scheduled_tasks(self, req):
+        return GetScheduledTaskListResponse(self.tasks)
 
     def get_schedule(self, req):
         self.distances = self.get_path_lengths_for_agent(req.agent_name)

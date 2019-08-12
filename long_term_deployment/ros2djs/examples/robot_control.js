@@ -82,28 +82,59 @@ function handleClick(evt) {
   //console.log('Transformed click coordinates');
   console.log(x_click_map + ', ' +  y_click_map);
 
-  //s.x = x_click_map;
-  //s.y = y_click_map;
+  window.nav_topic.publish(new ROSLIB.Message({
+    header: {
+      frame_id: 'map'
+    },
+    pose: {
+      position: {
+        x: x_click_map,
+        y: -y_click_map,
+        z: 0.0
+      },
+      orientation: heading_to_quaternion(0)
+    }
+  }));
 
-  //nav_topic.publish(new ROSLIB.Message({
-  //  header: {
-  //    frame_id: 'map'
-  //  },
-  //  pose: {
-  //    position: {
-  //      x: x_click_map,
-  //      y: -y_click_map,
-  //      z: 0.0
-  //    },
-  //    orientation: heading_to_quaternion(0)
-  //  }
-  //}));
+  let agent_description = {
+    agent_name: window.activeRobot,
+    agent_type: window.activeRobot
+  };
+
+  let goto_task = new ROSLIB.ServiceRequest({
+    task: {
+      workspace_name : '',
+      package_name : 'navigation_tasks',
+      launchfile_name : 'go_to_pose',
+      args : [String(x_click_map), String(-y_click_map), "0.0"],
+      debug : true
+    },
+    agent: agent_description
+  });
+
+  window.active_task_srv.callService(goto_task, function(result) {
+    console.log('Task Submission Result: '+ result.success);
+  });
+
 }
 
 
 function start_robot_control(agent_name) {
   function func(mouse_event) {
     window.activeRobot = agent_name;
+
+    window.active_task_srv = new ROSLIB.Service({
+      ros : ros,
+      name : '/task_server/queue_task',
+      serviceType : '/long_term_deployment/QueueTask'
+    });
+
+    window.background_task_srv = new ROSLIB.Service({
+      ros : ros,
+      name : '/task_server/start_continuous_task',
+      serviceType : '/long_term_deployment/QueueTask'
+    });
+
     // hide the robot select div
     document.getElementById("robot_select").style.display = "none";
     document.getElementById("robot_status").style.display = "flex";
@@ -157,7 +188,7 @@ function start_robot_control(agent_name) {
 
     var nav_topic = new ROSLIB.Topic({
       ros : ros,
-      name : '/move_base_simple/goal',
+      name : '/'+window.activeRobot+'/move_base_simple/goal',
       messageType : 'geometry_msgs/PoseStamped'
     });
     window.nav_topic = nav_topic;
@@ -238,18 +269,6 @@ function init() {
 
     console.log("sending task to " + window.activeRobot);
 
-    let active_task_srv = new ROSLIB.Service({
-      ros : ros,
-      name : '/task_server/queue_task',
-      serviceType : '/long_term_deployment/QueueTask'
-    });
-
-    let background_task_srv = new ROSLIB.Service({
-      ros : ros,
-      name : '/task_server/start_continuous_task',
-      serviceType : '/long_term_deployment/QueueTask'
-    });
-
     let agent_description = {
       agent_name: window.activeRobot,
       agent_type: window.activeRobot
@@ -278,9 +297,9 @@ function init() {
 
     let task_srv = null;
     if(document.getElementById("tasktype").value === "background") {
-      task_srv = background_task_srv;
+      task_srv = window.background_task_srv;
     } else {
-      task_srv = active_task_srv;
+      task_srv = window.active_task_srv;
     }
 
     task_srv.callService(requested_task, function(result) {
